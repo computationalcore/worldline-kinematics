@@ -1,0 +1,1029 @@
+/**
+ * Modal showing cosmic journey statistics.
+ * Takes 80% of viewport (max 1200px) with semi-transparent background.
+ * Features unit switching, clear distance display, and visual breakdowns.
+ */
+
+'use client';
+
+import { useState } from 'react';
+import { BlockMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
+import { cn } from '../utils';
+import type { SpeedUnit } from './types';
+import type { WorldlineState, AgeDuration } from '@worldline-kinematics/core';
+
+interface FrameInfo {
+  id: string;
+  label: string;
+  description: string;
+  distanceKm: number;
+  speedKms: number;
+  color: string;
+  percentage: number;
+}
+
+/**
+ * Detailed explanations for each reference frame with LaTeX formulas.
+ */
+const FRAME_DETAILS: Record<
+  string,
+  {
+    title: string;
+    explanation: string;
+    formula: string;
+    formulaExplanation: string;
+    speedFormula: string;
+    source: string;
+    color: string;
+  }
+> = {
+  spin: {
+    title: 'Earth Rotation (Spin)',
+    explanation:
+      'As Earth rotates on its axis, you move in a circle around the axis. Your speed depends on your latitude - fastest at the equator (~0.46 km/s), zero at the poles. However, this variation is negligible compared to your orbital (29.78 km/s), galactic (220 km/s), and cosmic (370 km/s) velocities. We use an average mid-latitude value for simplicity.',
+    formula: 'v = \\omega \\cdot r(\\phi) = \\omega \\cdot R_E \\cdot \\cos(\\phi)',
+    formulaExplanation:
+      "where v is velocity, ω is Earth's angular velocity (7.292×10⁻⁵ rad/s), R_E is Earth's radius (6,371 km), and φ is your latitude. At the equator (φ=0°), v ≈ 0.465 km/s. At 45° latitude, v ≈ 0.328 km/s.",
+    speedFormula: 'd = v \\cdot t',
+    source: "Earth's sidereal rotation period: 23h 56m 4.09s (NIST)",
+    color: '#10b981',
+  },
+  orbit: {
+    title: 'Solar Orbit',
+    explanation:
+      'Earth orbits the Sun at approximately 29.78 km/s, completing one orbit every 365.25 days. This is your motion relative to the Sun.',
+    formula: 'v = \\frac{2\\pi \\cdot a}{T} \\approx 29.78 \\text{ km/s}',
+    formulaExplanation:
+      'where a is the semi-major axis (1 AU ≈ 149.6 million km) and T is the orbital period (1 year).',
+    speedFormula: 'd = v_{\\oplus} \\cdot t = 29.78 \\cdot t',
+    source: 'NASA Planetary Fact Sheet',
+    color: '#3b82f6',
+  },
+  galaxy: {
+    title: 'Galactic Motion',
+    explanation:
+      'Our Solar System orbits the center of the Milky Way galaxy at about 220 km/s. One galactic year takes approximately 225-250 million Earth years.',
+    formula: 'v_{gal} \\approx 220 \\text{ km/s}',
+    formulaExplanation:
+      'The Sun is about 26,000 light-years from the galactic center, taking ~225 million years to complete one orbit.',
+    speedFormula: 'd = v_{gal} \\cdot t = 220 \\cdot t',
+    source: 'IAU/JPL - Solar galactic orbital velocity',
+    color: '#8b5cf6',
+  },
+  cmb: {
+    title: 'Cosmic Drift (CMB Frame)',
+    explanation:
+      'Relative to the Cosmic Microwave Background (the oldest light in the universe), our entire galaxy is moving at about 369.82 km/s toward the constellation Leo.',
+    formula: 'v_{CMB} = 369.82 \\pm 0.11 \\text{ km/s}',
+    formulaExplanation:
+      "This velocity is measured from the dipole anisotropy in the CMB - the slight temperature difference between the direction we're moving toward vs away from.",
+    speedFormula: 'd = v_{CMB} \\cdot t = 369.82 \\cdot t',
+    source: 'Planck 2018 results / Particle Data Group',
+    color: '#f59e0b',
+  },
+};
+
+/**
+ * Frame Info Modal - displays detailed physics information in an overlay.
+ */
+interface FrameInfoModalProps {
+  frameId: string | null;
+  frameData: FrameInfo | null;
+  onClose: () => void;
+  distanceUnit: DistanceUnit;
+  speedUnit: SpeedUnit;
+}
+
+function FrameInfoModal({
+  frameId,
+  frameData,
+  onClose,
+  distanceUnit,
+  speedUnit,
+}: FrameInfoModalProps) {
+  const [copied, setCopied] = useState(false);
+
+  if (!frameId || !frameData) return null;
+
+  const details = FRAME_DETAILS[frameId];
+  if (!details) return null;
+
+  const handleExport = async () => {
+    const exportText = `
+${details.title}
+${'='.repeat(details.title.length)}
+
+${details.explanation}
+
+VELOCITY FORMULA
+----------------
+${details.formula
+  .replace(/\\\\/g, '\\')
+  .replace(/\\text\{([^}]+)\}/g, '$1')
+  .replace(/\\cdot/g, '*')
+  .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)')
+  .replace(/\\approx/g, '≈')
+  .replace(/\\pm/g, '±')}
+
+${details.formulaExplanation}
+
+DISTANCE CALCULATION
+--------------------
+${details.speedFormula
+  .replace(/\\\\/g, '\\')
+  .replace(/\\text\{([^}]+)\}/g, '$1')
+  .replace(/\\cdot/g, '*')}
+where t is time in seconds and d is distance in km
+
+YOUR CURRENT VALUES
+-------------------
+Distance traveled: ${formatDistanceCompact(frameData.distanceKm, distanceUnit)}
+Current speed: ${formatSpeed(frameData.speedKms, speedUnit)}
+Contribution: ${frameData.percentage.toFixed(1)}% of total journey
+
+SOURCE
+------
+${details.source}
+
+---
+Generated by Worldline Kinematics
+https://worldline-kinematics.app
+`.trim();
+
+    try {
+      await navigator.clipboard.writeText(exportText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for browsers without clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = exportText;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[400] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className={cn(
+          'w-full max-w-lg',
+          'max-h-[80vh]',
+          'bg-neutral-900/98 backdrop-blur-md',
+          'rounded-2xl border-2',
+          'flex flex-col overflow-hidden',
+          'shadow-2xl'
+        )}
+        style={{ borderColor: details.color }}
+      >
+        {/* Header */}
+        <div
+          className="px-5 py-4 border-b border-white/10"
+          style={{
+            background: `linear-gradient(135deg, ${details.color}20 0%, transparent 100%)`,
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: details.color }}
+              />
+              <h3 className="text-lg font-bold text-white">{details.title}</h3>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            >
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* Explanation */}
+          <p className="text-sm text-neutral-300 leading-relaxed">
+            {details.explanation}
+          </p>
+
+          {/* Your Values */}
+          <div
+            className="rounded-lg p-4 border"
+            style={{
+              backgroundColor: `${details.color}10`,
+              borderColor: `${details.color}30`,
+            }}
+          >
+            <div
+              className="text-xs uppercase tracking-wider mb-3"
+              style={{ color: details.color }}
+            >
+              Your Current Values
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <div className="text-xl font-bold text-white tabular-nums">
+                  {formatDistanceCompact(frameData.distanceKm, distanceUnit)}
+                </div>
+                <div className="text-[10px] text-neutral-500">Distance</div>
+              </div>
+              <div>
+                <div className="text-xl font-bold text-white tabular-nums">
+                  {formatSpeed(frameData.speedKms, speedUnit)}
+                </div>
+                <div className="text-[10px] text-neutral-500">Speed</div>
+              </div>
+              <div>
+                <div className="text-xl font-bold text-white tabular-nums">
+                  {frameData.percentage.toFixed(1)}%
+                </div>
+                <div className="text-[10px] text-neutral-500">Of Total</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Velocity Formula */}
+          <div className="bg-black/40 rounded-lg p-4">
+            <div className="text-xs text-neutral-500 uppercase tracking-wider mb-3">
+              Velocity Formula
+            </div>
+            <div className="text-white overflow-x-auto py-2">
+              <BlockMath math={details.formula} />
+            </div>
+            <p className="text-xs text-neutral-400 mt-3 leading-relaxed">
+              {details.formulaExplanation}
+            </p>
+          </div>
+
+          {/* Distance Formula */}
+          <div className="bg-black/40 rounded-lg p-4">
+            <div className="text-xs text-neutral-500 uppercase tracking-wider mb-3">
+              Distance Calculation
+            </div>
+            <div className="text-white overflow-x-auto py-2">
+              <BlockMath math={details.speedFormula} />
+            </div>
+            <p className="text-xs text-neutral-400 mt-3">
+              where t is time in seconds and d is distance in km
+            </p>
+          </div>
+
+          {/* Source */}
+          <div className="flex items-start gap-2 text-xs text-neutral-500 bg-white/5 rounded-lg p-3">
+            <svg
+              className="w-4 h-4 mt-0.5 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+              />
+            </svg>
+            <div>
+              <span className="text-neutral-400">Source:</span> {details.source}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer with Export */}
+        <div className="px-5 py-4 border-t border-white/10 bg-white/5 flex items-center justify-between">
+          <button
+            onClick={handleExport}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+              copied
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : 'bg-white/10 text-white hover:bg-white/20'
+            )}
+          >
+            {copied ? (
+              <>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                Copied!
+              </>
+            ) : (
+              <>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                  />
+                </svg>
+                Export to Clipboard
+              </>
+            )}
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-white/10 text-white hover:bg-white/20 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type DistanceUnit = 'km' | 'miles' | 'au';
+
+interface JourneyModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  worldline: WorldlineState | null;
+  age: AgeDuration | null;
+  speedUnit: SpeedUnit;
+  onSpeedUnitChange: (unit: SpeedUnit) => void;
+  onChangeBirthDate: () => void;
+}
+
+const SPEED_UNITS: SpeedUnit[] = ['km/s', 'km/h', 'mph'];
+const DISTANCE_UNITS: DistanceUnit[] = ['km', 'miles', 'au'];
+
+// Constants
+const KM_TO_MILES = 0.621371;
+const KM_TO_AU = 1 / 149_597_870.7;
+const MOON_DISTANCE_KM = 384_400;
+const PLUTO_DISTANCE_KM = 5_906_380_000;
+const LIGHT_YEAR_KM = 9.461e12;
+const EARTH_CIRCUMFERENCE_KM = 40_075;
+const SPEED_OF_LIGHT_KMS = 299_792.458;
+const EARTH_YEAR_DAYS = 365.25;
+
+/**
+ * Orbital periods in Earth days for each planet.
+ * Source: NASA Planetary Fact Sheets
+ */
+const ORBITAL_PERIODS: Record<string, { days: number; color: string; icon: string }> = {
+  Mercury: { days: 87.97, color: '#b5b5b5', icon: '/textures/2k_mercury.jpg' },
+  Venus: { days: 224.7, color: '#e6c87a', icon: '/textures/2k_venus_surface.jpg' },
+  Earth: { days: 365.25, color: '#4488cc', icon: '/textures/earth_daymap.jpg' },
+  Mars: { days: 686.98, color: '#c1440e', icon: '/textures/2k_mars.jpg' },
+  Jupiter: { days: 4332.59, color: '#d4a574', icon: '/textures/2k_jupiter.jpg' },
+  Saturn: { days: 10759.22, color: '#f4d59e', icon: '/textures/2k_saturn.jpg' },
+  Uranus: { days: 30688.5, color: '#b5e3e3', icon: '/textures/2k_uranus.jpg' },
+  Neptune: { days: 60182, color: '#5b7fde', icon: '/textures/2k_neptune.jpg' },
+};
+
+/**
+ * Format large distance with full word suffix.
+ */
+function formatDistanceFull(
+  km: number,
+  unit: DistanceUnit
+): { value: string; suffix: string } {
+  let value = km;
+
+  // Convert to selected unit
+  if (unit === 'miles') {
+    value = km * KM_TO_MILES;
+  } else if (unit === 'au') {
+    value = km * KM_TO_AU;
+    if (value >= 1000) {
+      return {
+        value: value.toLocaleString(undefined, { maximumFractionDigits: 0 }),
+        suffix: 'AU',
+      };
+    }
+    return { value: value.toFixed(2), suffix: 'AU' };
+  }
+
+  const unitLabel = unit === 'miles' ? 'miles' : 'km';
+
+  if (value >= 1e12) {
+    return { value: (value / 1e12).toFixed(2), suffix: `Trillion ${unitLabel}` };
+  }
+  if (value >= 1e9) {
+    return { value: (value / 1e9).toFixed(2), suffix: `Billion ${unitLabel}` };
+  }
+  if (value >= 1e6) {
+    return { value: (value / 1e6).toFixed(2), suffix: `Million ${unitLabel}` };
+  }
+  if (value >= 1e3) {
+    return { value: (value / 1e3).toFixed(0), suffix: `Thousand ${unitLabel}` };
+  }
+  return { value: value.toFixed(0), suffix: unitLabel };
+}
+
+/**
+ * Format distance compactly for breakdown rows.
+ */
+function formatDistanceCompact(km: number, unit: DistanceUnit): string {
+  let value = km;
+  let unitLabel = 'km';
+
+  if (unit === 'miles') {
+    value = km * KM_TO_MILES;
+    unitLabel = 'mi';
+  } else if (unit === 'au') {
+    value = km * KM_TO_AU;
+    if (value >= 0.01) {
+      return `${value.toFixed(2)} AU`;
+    }
+    return `${(value * 1000).toFixed(2)} mAU`;
+  }
+
+  if (value >= 1e12) return `${(value / 1e12).toFixed(2)}T ${unitLabel}`;
+  if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B ${unitLabel}`;
+  if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M ${unitLabel}`;
+  if (value >= 1e3) return `${(value / 1e3).toFixed(0)}K ${unitLabel}`;
+  return `${value.toFixed(0)} ${unitLabel}`;
+}
+
+/**
+ * Convert speed based on unit.
+ */
+function formatSpeed(kms: number, unit: SpeedUnit): string {
+  switch (unit) {
+    case 'km/h':
+      return `${(kms * 3600).toLocaleString(undefined, { maximumFractionDigits: 0 })} km/h`;
+    case 'mph':
+      return `${(kms * 2236.936).toLocaleString(undefined, { maximumFractionDigits: 0 })} mph`;
+    default:
+      return `${kms.toFixed(2)} km/s`;
+  }
+}
+
+/**
+ * Build frame info array from worldline state with percentages.
+ */
+function buildFrameInfo(worldline: WorldlineState | null): FrameInfo[] {
+  if (!worldline) return [];
+
+  const total =
+    worldline.distances.spin.distanceKm +
+    worldline.distances.orbit.distanceKm +
+    worldline.distances.galaxy.distanceKm +
+    worldline.distances.cmb.distanceKm;
+
+  const frames = [
+    {
+      id: 'spin',
+      label: 'Earth Rotation',
+      description: 'Spinning with Earth',
+      distanceKm: worldline.distances.spin.distanceKm,
+      speedKms: worldline.frames.spin.velocityKms,
+      color: '#10b981', // emerald
+    },
+    {
+      id: 'orbit',
+      label: 'Solar Orbit',
+      description: 'Earth orbiting the Sun',
+      distanceKm: worldline.distances.orbit.distanceKm,
+      speedKms: worldline.frames.orbit.velocityKms,
+      color: '#3b82f6', // blue
+    },
+    {
+      id: 'galaxy',
+      label: 'Galactic Motion',
+      description: 'Sun orbiting the galaxy',
+      distanceKm: worldline.distances.galaxy.distanceKm,
+      speedKms: worldline.frames.galaxy.velocityKms,
+      color: '#8b5cf6', // violet
+    },
+    {
+      id: 'cmb',
+      label: 'Cosmic Drift',
+      description: 'Galaxy moving through space',
+      distanceKm: worldline.distances.cmb.distanceKm,
+      speedKms: worldline.frames.cmb.velocityKms,
+      color: '#f59e0b', // amber
+    },
+  ];
+
+  return frames.map((f) => ({
+    ...f,
+    percentage: total > 0 ? (f.distanceKm / total) * 100 : 0,
+  }));
+}
+
+export function JourneyModal({
+  isOpen,
+  onClose,
+  worldline,
+  age,
+  speedUnit,
+  onSpeedUnitChange,
+  onChangeBirthDate,
+}: JourneyModalProps) {
+  const [distanceUnit, setDistanceUnit] = useState<DistanceUnit>('km');
+  const [infoFrameId, setInfoFrameId] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+
+  const frames = buildFrameInfo(worldline);
+  const isPreBirth = age?.isPreBirth ?? false;
+
+  // Calculate totals
+  const totalDistanceKm = worldline
+    ? worldline.distances.spin.distanceKm +
+      worldline.distances.orbit.distanceKm +
+      worldline.distances.galaxy.distanceKm +
+      worldline.distances.cmb.distanceKm
+    : 0;
+
+  const totalSpeedKms = worldline
+    ? worldline.frames.spin.velocityKms +
+      worldline.frames.orbit.velocityKms +
+      worldline.frames.galaxy.velocityKms +
+      worldline.frames.cmb.velocityKms
+    : 0;
+
+  // Fun statistics
+  const moonTrips = totalDistanceKm / (MOON_DISTANCE_KM * 2);
+  const plutoTrips = totalDistanceKm / PLUTO_DISTANCE_KM;
+  const lightYearProgress = (totalDistanceKm / LIGHT_YEAR_KM) * 100;
+  const earthCircumferences = totalDistanceKm / EARTH_CIRCUMFERENCE_KM;
+  const percentSpeedOfLight = (totalSpeedKms / SPEED_OF_LIGHT_KMS) * 100;
+
+  // Solar orbits (age in Earth years)
+  const ageInDays = worldline ? worldline.durationSeconds / 86400 : 0;
+  const solarOrbits = ageInDays / EARTH_YEAR_DAYS;
+
+  // Planetary ages
+  const planetaryAges = Object.entries(ORBITAL_PERIODS).map(([planet, data]) => {
+    const ageOnPlanet = ageInDays / data.days;
+    return {
+      planet,
+      age: ageOnPlanet,
+      color: data.color,
+      icon: data.icon,
+    };
+  });
+
+  const cycleSpeedUnit = () => {
+    const idx = SPEED_UNITS.indexOf(speedUnit);
+    const nextIdx = (idx + 1) % SPEED_UNITS.length;
+    const nextUnit = SPEED_UNITS[nextIdx];
+    if (nextUnit) onSpeedUnitChange(nextUnit);
+  };
+
+  const cycleDistanceUnit = () => {
+    const idx = DISTANCE_UNITS.indexOf(distanceUnit);
+    const nextIdx = (idx + 1) % DISTANCE_UNITS.length;
+    const nextUnit = DISTANCE_UNITS[nextIdx];
+    if (nextUnit) setDistanceUnit(nextUnit);
+  };
+
+  // Format hours, minutes, seconds
+  const hours = age?.hours ?? 0;
+  const minutes = age?.minutes ?? 0;
+  const seconds = age?.seconds ?? 0;
+
+  const distanceFormatted = formatDistanceFull(totalDistanceKm, distanceUnit);
+
+  return (
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className={cn(
+          'w-[85%] max-w-5xl',
+          'max-h-[85vh]',
+          'bg-neutral-900/95 backdrop-blur-md',
+          'rounded-2xl border border-white/20',
+          'flex flex-col overflow-hidden',
+          'shadow-2xl shadow-blue-500/10'
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">Your Journey</h2>
+              <p className="text-xs text-neutral-400">Through the cosmos</p>
+            </div>
+          </div>
+
+          {/* Unit toggles */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={cycleDistanceUnit}
+              className="text-xs text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/10 border border-white/10"
+              title="Click to change distance units"
+            >
+              Distance: {distanceUnit.toUpperCase()}
+            </button>
+            <button
+              onClick={cycleSpeedUnit}
+              className="text-xs text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/10 border border-white/10"
+              title="Click to change speed units"
+            >
+              Speed: {speedUnit}
+            </button>
+          </div>
+        </div>
+
+        {/* Content - scrollable */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {isPreBirth ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-amber-400 text-lg font-medium mb-2">
+                  Journey Not Yet Started
+                </div>
+                <div className="text-neutral-400 text-sm">
+                  Your cosmic journey begins at birth
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Mission Duration */}
+              <div className="text-center">
+                <div className="text-xs text-neutral-400 uppercase tracking-wider mb-2">
+                  Mission Duration
+                </div>
+                <div className="flex items-center justify-center gap-2 text-white">
+                  <span className="text-4xl font-bold tabular-nums">
+                    {age?.years ?? 0}
+                  </span>
+                  <span className="text-lg text-neutral-400">years</span>
+                  <span className="text-4xl font-bold tabular-nums">
+                    {age?.months ?? 0}
+                  </span>
+                  <span className="text-lg text-neutral-400">months</span>
+                  <span className="text-4xl font-bold tabular-nums">
+                    {age?.days ?? 0}
+                  </span>
+                  <span className="text-lg text-neutral-400">days</span>
+                  <span className="text-neutral-600 mx-2">|</span>
+                  <span className="text-2xl font-medium text-neutral-300 tabular-nums">
+                    {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}:
+                    {String(seconds).padStart(2, '0')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Total Distance Hero */}
+              <div className="p-6 bg-gradient-to-r from-blue-500/20 via-purple-500/15 to-blue-500/20 rounded-xl border border-white/10 text-center">
+                <div className="text-xs text-neutral-400 uppercase tracking-wider mb-2">
+                  Total Distance Traveled
+                </div>
+                <div className="flex items-baseline justify-center gap-2">
+                  <span className="text-5xl font-bold text-white tabular-nums">
+                    {distanceFormatted.value}
+                  </span>
+                  <span className="text-xl text-neutral-300">
+                    {distanceFormatted.suffix}
+                  </span>
+                </div>
+                <div className="text-sm text-neutral-400 mt-3 flex items-center justify-center gap-4">
+                  <span>
+                    Traveling at{' '}
+                    <span className="text-emerald-400 font-medium">
+                      {formatSpeed(totalSpeedKms, speedUnit)}
+                    </span>
+                  </span>
+                  <span className="text-neutral-600">|</span>
+                  <span className="text-blue-400">
+                    {percentSpeedOfLight.toFixed(4)}% speed of light
+                  </span>
+                </div>
+              </div>
+
+              {/* Two column layout for breakdown and stats */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Frame Breakdown */}
+                <div>
+                  <div className="text-xs text-neutral-400 uppercase tracking-wider mb-3">
+                    Distance by Motion Type
+                  </div>
+                  <div className="space-y-3">
+                    {frames.map((frame) => (
+                      <div
+                        key={frame.id}
+                        className="p-3 rounded-lg bg-white/5 border border-white/5 hover:border-white/10 transition-colors"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: frame.color }}
+                            />
+                            <div>
+                              <div className="text-sm font-medium text-white">
+                                {frame.label}
+                              </div>
+                              <div className="text-[10px] text-neutral-500">
+                                {frame.description}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <div className="text-sm font-medium text-white tabular-nums">
+                                {formatDistanceCompact(frame.distanceKm, distanceUnit)}
+                              </div>
+                              <div className="text-[10px] text-neutral-500 tabular-nums">
+                                {formatSpeed(frame.speedKms, speedUnit)}
+                              </div>
+                            </div>
+                            {/* Info button - opens modal */}
+                            <button
+                              onClick={() => setInfoFrameId(frame.id)}
+                              className="w-6 h-6 rounded-full bg-white/5 text-neutral-400 hover:bg-white/15 hover:text-white flex items-center justify-center transition-all"
+                              title="View calculation details"
+                            >
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                        {/* Progress bar */}
+                        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${frame.percentage}%`,
+                              backgroundColor: frame.color,
+                            }}
+                          />
+                        </div>
+                        <div className="text-[10px] text-neutral-500 mt-1 text-right">
+                          {frame.percentage.toFixed(1)}% of total
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Fun Statistics */}
+                <div>
+                  <div className="text-xs text-neutral-400 uppercase tracking-wider mb-3">
+                    Journey Milestones
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 rounded-lg bg-white/5 border border-white/5">
+                      <div className="text-2xl font-bold text-blue-400 tabular-nums">
+                        {earthCircumferences >= 1e6
+                          ? `${(earthCircumferences / 1e6).toFixed(1)}M`
+                          : earthCircumferences >= 1000
+                            ? `${(earthCircumferences / 1000).toFixed(1)}K`
+                            : earthCircumferences.toFixed(0)}
+                      </div>
+                      <div className="text-xs text-neutral-500 mt-1">
+                        Times around Earth
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-lg bg-white/5 border border-white/5">
+                      <div className="text-2xl font-bold text-cyan-400 tabular-nums">
+                        {moonTrips >= 1000
+                          ? `${(moonTrips / 1000).toFixed(1)}K`
+                          : moonTrips.toFixed(0)}
+                      </div>
+                      <div className="text-xs text-neutral-500 mt-1">
+                        Moon round trips
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-lg bg-white/5 border border-white/5">
+                      <div className="text-2xl font-bold text-purple-400 tabular-nums">
+                        {plutoTrips >= 1 ? plutoTrips.toFixed(1) : plutoTrips.toFixed(2)}
+                      </div>
+                      <div className="text-xs text-neutral-500 mt-1">Trips to Pluto</div>
+                    </div>
+                    <div className="p-4 rounded-lg bg-white/5 border border-white/5">
+                      <div className="text-2xl font-bold text-amber-400 tabular-nums">
+                        {lightYearProgress.toFixed(4)}%
+                      </div>
+                      <div className="text-xs text-neutral-500 mt-1">Of a light-year</div>
+                    </div>
+                  </div>
+
+                  {/* Speed context */}
+                  <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20">
+                    <div className="text-xs text-emerald-400 uppercase tracking-wider mb-2">
+                      Speed Context
+                    </div>
+                    <div className="text-sm text-neutral-300">
+                      You're moving at{' '}
+                      <span className="text-emerald-400 font-medium">
+                        {formatSpeed(totalSpeedKms, speedUnit)}
+                      </span>{' '}
+                      through space. That's about{' '}
+                      <span className="text-emerald-400 font-medium">
+                        {(totalSpeedKms / 0.343).toFixed(0)}x
+                      </span>{' '}
+                      the speed of sound, or{' '}
+                      <span className="text-emerald-400 font-medium">
+                        {((totalSpeedKms * 3600) / 900).toFixed(0)}x
+                      </span>{' '}
+                      faster than a commercial jet.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Solar Orbits & Planetary Ages */}
+              <div className="p-5 rounded-xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-yellow-500/10 border border-amber-500/20">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex-1">
+                    <div className="text-xs text-amber-400/70 uppercase tracking-wider mb-1">
+                      Orbits Around the Sun
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-bold text-amber-400 tabular-nums">
+                        {solarOrbits.toFixed(2)}
+                      </span>
+                      <span className="text-sm text-neutral-400">complete orbits</span>
+                    </div>
+                  </div>
+                  <img
+                    src="/textures/2k_sun.jpg"
+                    alt="Sun"
+                    className="w-16 h-16 rounded-full object-cover shadow-lg shadow-orange-500/30"
+                  />
+                </div>
+
+                {/* Planetary Ages Table */}
+                <div className="text-xs text-neutral-400 uppercase tracking-wider mb-3 mt-6">
+                  Your Age on Other Planets
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {planetaryAges.map(({ planet, age, color, icon }) => (
+                    <div
+                      key={planet}
+                      className="p-3 rounded-lg bg-black/30 border border-white/5 text-center group hover:border-white/20 transition-colors"
+                    >
+                      <img
+                        src={icon}
+                        alt={planet}
+                        className="w-8 h-8 rounded-full object-cover mx-auto mb-1 shadow-md"
+                      />
+                      <div className="text-lg font-bold tabular-nums" style={{ color }}>
+                        {age >= 100
+                          ? age.toFixed(0)
+                          : age >= 10
+                            ? age.toFixed(1)
+                            : age.toFixed(2)}
+                      </div>
+                      <div className="text-[10px] text-neutral-500 mt-0.5">
+                        {planet} years
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-[10px] text-neutral-600 mt-3 text-center">
+                  Based on each planet's orbital period around the Sun
+                </div>
+              </div>
+
+              {/* Change birth date */}
+              <div className="pt-4 border-t border-white/10 text-center">
+                <button
+                  onClick={onChangeBirthDate}
+                  className="text-xs text-neutral-500 hover:text-white transition-colors py-2 px-4 rounded-lg hover:bg-white/5"
+                >
+                  Change birth date
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer with close button */}
+        <div className="px-6 py-4 border-t border-white/10 bg-white/5">
+          <button
+            onClick={onClose}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+              />
+            </svg>
+            Explore the Solar System
+          </button>
+          <div className="mt-3 flex flex-col gap-2">
+            <p className="text-[10px] text-blue-300/60 text-center flex items-center justify-center gap-1.5">
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
+                />
+              </svg>
+              Click any planet to explore. Zoom and rotate to navigate.
+            </p>
+            <p className="text-xs text-neutral-400 text-center flex items-center justify-center gap-2">
+              <svg
+                className="w-4 h-4 text-emerald-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                />
+              </svg>
+              <span>
+                All calculations run locally. Your data never leaves your browser.
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Frame Info Modal - overlay on top */}
+      <FrameInfoModal
+        frameId={infoFrameId}
+        frameData={frames.find((f) => f.id === infoFrameId) || null}
+        onClose={() => setInfoFrameId(null)}
+        distanceUnit={distanceUnit}
+        speedUnit={speedUnit}
+      />
+    </div>
+  );
+}
