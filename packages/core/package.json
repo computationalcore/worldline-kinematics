@@ -2,6 +2,27 @@
   "name": "@worldline-kinematics/core",
   "version": "0.1.0",
   "description": "Pure TypeScript physics engine for worldline kinematics calculations",
+  "keywords": [
+    "physics",
+    "astronomy",
+    "kinematics",
+    "reference-frames",
+    "spacetime",
+    "cosmology",
+    "earth-rotation",
+    "orbital-mechanics"
+  ],
+  "homepage": "https://github.com/computationalcore/worldline-kinematics#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/computationalcore/worldline-kinematics.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/computationalcore/worldline-kinematics/issues"
+  },
+  "author": "Vin Busquet <computationalcore@gmail.com>",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,14 +40,20 @@
     "dev": "tsup src/index.ts --format esm --dts --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
+  },
+  "dependencies": {
+    "date-fns-tz": "^3.2.0",
+    "tz-lookup": "^6.1.25"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "@types/tz-lookup": "^6.1.2",
     "tsup": "^8.3.5",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.8"
+    "vitest": "^4.0.18"
   },
-  "peerDependencies": {},
   "sideEffects": false
 }

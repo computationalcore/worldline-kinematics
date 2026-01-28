@@ -12,10 +12,15 @@ export * from './constants';
 
 // Geo utilities
 export * from './geo/wgs84';
+export * from './geo/seasons';
+
+// Lunar utilities
+export * from './lunar/phase';
 
 // Time utilities
 export * from './time/age';
 export * from './time/parse';
+export * from './time/timezone';
 
 // Unit conversions
 export * from './units/convert';
