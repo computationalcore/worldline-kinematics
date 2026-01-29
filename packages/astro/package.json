@@ -2,6 +2,27 @@
   "name": "@worldline-kinematics/astro",
   "version": "0.1.0",
   "description": "Ephemerides, physical data, and coordinate transforms for solar system visualization",
+  "keywords": [
+    "astronomy",
+    "ephemeris",
+    "solar-system",
+    "planets",
+    "coordinate-transforms",
+    "visualization",
+    "three-js",
+    "astronomy-engine"
+  ],
+  "homepage": "https://github.com/computationalcore/worldline-kinematics#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/computationalcore/worldline-kinematics.git",
+    "directory": "packages/astro"
+  },
+  "bugs": {
+    "url": "https://github.com/computationalcore/worldline-kinematics/issues"
+  },
+  "author": "Vin Busquet <computationalcore@gmail.com>",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -27,7 +48,9 @@
     "dev": "tsup src/index.ts src/ephemeris-entry.ts src/core-entry.ts --format esm --dts --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "astronomy-engine": "^2.1.19"
@@ -36,7 +59,7 @@
     "@types/node": "^22.10.0",
     "tsup": "^8.3.5",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.8"
+    "vitest": "^4.0.18"
   },
   "sideEffects": false
 }

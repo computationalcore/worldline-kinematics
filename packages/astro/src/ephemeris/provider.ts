@@ -221,8 +221,8 @@ export class AstronomyEngineProvider implements EphemerisProvider {
 
     const astroBody = BODY_MAP[bodyId];
 
-    // For Moon and bodies without Astronomy Engine support, use physical data
-    if (astroBody === null || bodyId === 'Moon') {
+    // For bodies without Astronomy Engine support, use physical data
+    if (astroBody === null) {
       return this.computeOrientationFromPhysicalData(bodyId, epoch);
     }
 
@@ -242,10 +242,18 @@ export class AstronomyEngineProvider implements EphemerisProvider {
       const northEclVec3 = vec3FromAstronomyVector(northEcl);
       const northScene = eclToThreeJs(normalize(northEclVec3));
 
-      // Normalize rotation angle to [0, 360)
-      let rotationAngleDeg = axis.spin % 360;
-      if (rotationAngleDeg < 0) {
-        rotationAngleDeg += 360;
+      // For Earth, compute rotation angle using GMST-based approach for reliability.
+      // The IAU W angle relates to GMST by: W = GMST - 90° (for Earth's pole at α≈0°).
+      // This is more explicit and testable than the direct IAU formula.
+      let rotationAngleDeg: number;
+      if (bodyId === 'Earth') {
+        rotationAngleDeg = this.computeEarthWdeg(epoch);
+      } else {
+        // For other planets, use Astronomy Engine's spin value
+        rotationAngleDeg = axis.spin % 360;
+        if (rotationAngleDeg < 0) {
+          rotationAngleDeg += 360;
+        }
       }
 
       return {
@@ -261,17 +269,62 @@ export class AstronomyEngineProvider implements EphemerisProvider {
 
   /**
    * Compute Julian days since J2000.0 epoch.
-   * J2000.0 = January 1, 2000, 12:00 TT (approximately 11:58:55.816 UTC).
+   * J2000.0 = January 1, 2000, 12:00 UTC for practical purposes.
+   *
+   * Note: Astronomically, J2000.0 is 12:00 TT (~11:58:55.816 UTC), but for
+   * visualization purposes we use 12:00 UTC which is simpler and the ~64 second
+   * difference is negligible for rendering.
    *
    * @param date Date to compute from
    * @returns Days since J2000.0 (can be negative for dates before J2000.0)
    */
   private computeJulianDaysSinceJ2000(date: Date): number {
-    // J2000.0 in milliseconds since Unix epoch
-    // January 1, 2000, 12:00 TT is approximately January 1, 2000, 11:58:55.816 UTC
-    const J2000_MS = Date.UTC(2000, 0, 1, 11, 58, 55, 816);
+    // J2000.0 in milliseconds since Unix epoch (2000-01-01 12:00:00 UTC)
+    const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
     const MS_PER_DAY = 86400000;
     return (date.getTime() - J2000_MS) / MS_PER_DAY;
+  }
+
+  /**
+   * Normalize angle to [0, 360) range.
+   */
+  private normalizeDeg(deg: number): number {
+    deg = deg % 360;
+    return deg < 0 ? deg + 360 : deg;
+  }
+
+  /**
+   * Compute Greenwich Mean Sidereal Time in degrees.
+   *
+   * Uses the standard GMST formula from the US Naval Observatory.
+   * Source: https://aa.usno.navy.mil/faq/GAST
+   *
+   * @param date Date/time for GMST computation
+   * @returns GMST in degrees [0, 360)
+   */
+  private computeGmstDeg(date: Date): number {
+    const d = this.computeJulianDaysSinceJ2000(date);
+    const T = d / 36525.0; // Julian centuries since J2000
+
+    // GMST formula (degrees)
+    const gmst =
+      280.46061837 + 360.98564736629 * d + 0.000387933 * T * T - (T * T * T) / 38710000.0;
+
+    return this.normalizeDeg(gmst);
+  }
+
+  /**
+   * Compute Earth's IAU W angle (prime meridian rotation).
+   *
+   * For Earth, the relationship is: W = GMST - 90°
+   * This is because the IAU reference direction is at RA = 90° (for Earth's pole at α≈0°).
+   *
+   * @param date Date/time for computation
+   * @returns W angle in degrees [0, 360)
+   */
+  private computeEarthWdeg(date: Date): number {
+    const gmst = this.computeGmstDeg(date);
+    return this.normalizeDeg(gmst - 90);
   }
 
   /**

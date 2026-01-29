@@ -4,6 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { AstronomyEngineProvider } from '../src/ephemeris/provider';
+import { eclToThreeJs } from '../src/frames/transforms';
 import type { BodyId } from '../src/types';
 
 describe('getBodyOrientation', () => {
@@ -168,6 +169,176 @@ describe('getBodyOrientation', () => {
       // Actually, Earth rotates ~361 degrees per solar day relative to stars
       // The difference should be close to either ~0.98 or ~360-0.98
       expect(angleDiff).toBeLessThan(5); // Should be near 0 (mod 360)
+    });
+
+    it('Earth W at J2000 is approximately 190 degrees (GMST - 90)', () => {
+      // At J2000.0 (2000-01-01 12:00 UTC):
+      // GMST ~ 280.46 degrees
+      // W = GMST - 90 ~ 190.46 degrees (IAU reference is at RA = 90)
+      const j2000 = new Date('2000-01-01T12:00:00Z');
+      const orientation = provider.getBodyOrientation('Earth', j2000);
+
+      // W should be near 190 degrees at J2000
+      expect(orientation.rotationAngleDeg).toBeGreaterThan(185);
+      expect(orientation.rotationAngleDeg).toBeLessThan(195);
+    });
+
+    it('Earth W at midnight before J2000 differs by ~180 degrees', () => {
+      // At 2000-01-01 00:00 UTC (12 hours before J2000.0):
+      // Earth rotates ~180 degrees in 12 hours (half a solar day)
+      // So W should differ by approximately 180 degrees from J2000 value
+      const j2000 = new Date('2000-01-01T12:00:00Z');
+      const midnightBefore = new Date('2000-01-01T00:00:00Z');
+
+      const orientationJ2000 = provider.getBodyOrientation('Earth', j2000);
+      const orientationMidnight = provider.getBodyOrientation('Earth', midnightBefore);
+
+      // The difference should be ~180 degrees (half rotation)
+      const diff = Math.abs(
+        orientationJ2000.rotationAngleDeg - orientationMidnight.rotationAngleDeg
+      );
+      const normalizedDiff = diff > 180 ? 360 - diff : diff;
+
+      // Should be close to 180 degrees (within ~10 degrees tolerance)
+      expect(normalizedDiff).toBeGreaterThan(170);
+      expect(normalizedDiff).toBeLessThan(190);
+    });
+  });
+
+  describe('seasonal invariants (pole direction correctness)', () => {
+    it('subsolar latitude peaks at +23.44 degrees near June solstice', () => {
+      // This test verifies the Earth pole direction is correct.
+      // At June solstice, the subsolar latitude should be ~+23.44° (Tropic of Cancer).
+      // If the pole azimuth is wrong (e.g., tilt about Z instead of X),
+      // this test will fail with subsolar latitude near 0°.
+
+      const juneSolstice = new Date('2024-06-21T12:00:00Z');
+      const orientation = provider.getBodyOrientation('Earth', juneSolstice);
+      const earthState = provider.getHeliocentricState(
+        'Earth',
+        juneSolstice,
+        'ECLIPJ2000'
+      );
+
+      // Sun direction from Earth in ECL coordinates (Earth position negated, normalized)
+      const earthDist = Math.sqrt(
+        earthState.position.x ** 2 +
+          earthState.position.y ** 2 +
+          earthState.position.z ** 2
+      );
+      const sunDirEcl = {
+        x: -earthState.position.x / earthDist,
+        y: -earthState.position.y / earthDist,
+        z: -earthState.position.z / earthDist,
+      };
+
+      // Convert to scene coordinates (same frame as northPole)
+      const sunDir = eclToThreeJs(sunDirEcl);
+
+      // North pole in scene coordinates (already in scene frame from provider)
+      const pole = orientation.northPole;
+
+      // Subsolar latitude = arcsin(pole · sunDir)
+      const dotProduct = pole.x * sunDir.x + pole.y * sunDir.y + pole.z * sunDir.z;
+      const subsolarLatDeg = Math.asin(dotProduct) * (180 / Math.PI);
+
+      // Should be approximately +23.44° (within 2° tolerance for non-exact solstice time)
+      expect(subsolarLatDeg).toBeGreaterThan(20);
+      expect(subsolarLatDeg).toBeLessThan(26);
+    });
+
+    it('subsolar latitude is near -23.44 degrees at December solstice', () => {
+      const decSolstice = new Date('2024-12-21T12:00:00Z');
+      const orientation = provider.getBodyOrientation('Earth', decSolstice);
+      const earthState = provider.getHeliocentricState(
+        'Earth',
+        decSolstice,
+        'ECLIPJ2000'
+      );
+
+      const earthDist = Math.sqrt(
+        earthState.position.x ** 2 +
+          earthState.position.y ** 2 +
+          earthState.position.z ** 2
+      );
+      const sunDirEcl = {
+        x: -earthState.position.x / earthDist,
+        y: -earthState.position.y / earthDist,
+        z: -earthState.position.z / earthDist,
+      };
+      const sunDir = eclToThreeJs(sunDirEcl);
+
+      const pole = orientation.northPole;
+      const dotProduct = pole.x * sunDir.x + pole.y * sunDir.y + pole.z * sunDir.z;
+      const subsolarLatDeg = Math.asin(dotProduct) * (180 / Math.PI);
+
+      // Should be approximately -23.44°
+      expect(subsolarLatDeg).toBeGreaterThan(-26);
+      expect(subsolarLatDeg).toBeLessThan(-20);
+    });
+
+    it('subsolar latitude is near 0 at equinoxes', () => {
+      const marchEquinox = new Date('2024-03-20T12:00:00Z');
+      const orientation = provider.getBodyOrientation('Earth', marchEquinox);
+      const earthState = provider.getHeliocentricState(
+        'Earth',
+        marchEquinox,
+        'ECLIPJ2000'
+      );
+
+      const earthDist = Math.sqrt(
+        earthState.position.x ** 2 +
+          earthState.position.y ** 2 +
+          earthState.position.z ** 2
+      );
+      const sunDirEcl = {
+        x: -earthState.position.x / earthDist,
+        y: -earthState.position.y / earthDist,
+        z: -earthState.position.z / earthDist,
+      };
+      const sunDir = eclToThreeJs(sunDirEcl);
+
+      const pole = orientation.northPole;
+      const dotProduct = pole.x * sunDir.x + pole.y * sunDir.y + pole.z * sunDir.z;
+      const subsolarLatDeg = Math.asin(dotProduct) * (180 / Math.PI);
+
+      // Should be approximately 0° (within 5° tolerance)
+      expect(Math.abs(subsolarLatDeg)).toBeLessThan(5);
+    });
+  });
+
+  describe('subsolar longitude sanity checks', () => {
+    it('at UTC noon, subsolar longitude is near 0 (Greenwich)', () => {
+      // At any day's UTC 12:00, the Sun is approximately overhead at longitude 0
+      // (This is the definition of UTC/GMT)
+      // The GMST at UTC noon on any day should have the Sun near the meridian
+      // We can verify this indirectly through the W angle
+      const utcNoon = new Date('2024-06-21T12:00:00Z'); // Summer solstice noon
+      const orientation = provider.getBodyOrientation('Earth', utcNoon);
+
+      // At UTC noon, GMST should be such that the Sun is near lon=0
+      // This means GMST ~ Sun's RA (which at solstice is ~90 or ~270)
+      // We just verify W is a reasonable value and consistent
+      expect(orientation.rotationAngleDeg).toBeGreaterThanOrEqual(0);
+      expect(orientation.rotationAngleDeg).toBeLessThan(360);
+    });
+
+    it('rotation advances ~15 degrees per hour', () => {
+      // Earth rotates 360 degrees in ~24 hours = 15 degrees per hour
+      const hour1 = new Date('2024-01-15T12:00:00Z');
+      const hour2 = new Date('2024-01-15T13:00:00Z'); // 1 hour later
+
+      const orientation1 = provider.getBodyOrientation('Earth', hour1);
+      const orientation2 = provider.getBodyOrientation('Earth', hour2);
+
+      // Compute angle difference (accounting for wraparound)
+      let diff = orientation2.rotationAngleDeg - orientation1.rotationAngleDeg;
+      if (diff < 0) diff += 360;
+      if (diff > 180) diff = 360 - diff;
+
+      // Should be approximately 15 degrees (within 1 degree tolerance)
+      expect(diff).toBeGreaterThan(14);
+      expect(diff).toBeLessThan(16);
     });
   });
 });

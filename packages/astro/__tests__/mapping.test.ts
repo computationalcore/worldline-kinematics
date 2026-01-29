@@ -7,6 +7,9 @@ import {
   validateMapping,
   createValidatedMapping,
   createPhysicalMapping,
+  createMapping,
+  createMappingFromSimple,
+  getPreset,
   MappingValidationError,
   AU_KM,
   AU_TO_SCENE,
@@ -14,6 +17,10 @@ import {
   PRESET_PLANET_RATIO,
   PRESET_SCHOOL_MODEL,
   PRESET_EXPLORER,
+  PRESET_TRUE_SIZES,
+  PRESET_MASS_COMPARISON,
+  DISTANCE_LINEAR,
+  SIZE_NORMALIZED,
 } from '../src/scale/mapping';
 
 describe('validateMapping', () => {
@@ -168,6 +175,125 @@ describe('createPhysicalMapping', () => {
       // Should pass validation
       expect(() => validateMapping(mapping)).not.toThrow();
     }
+  });
+});
+
+describe('getPreset', () => {
+  it('returns truePhysical preset', () => {
+    const preset = getPreset('truePhysical');
+    expect(preset).toBe(PRESET_TRUE_PHYSICAL);
+  });
+
+  it('returns planetRatio preset', () => {
+    const preset = getPreset('planetRatio');
+    expect(preset).toBe(PRESET_PLANET_RATIO);
+  });
+
+  it('returns schoolModel preset', () => {
+    const preset = getPreset('schoolModel');
+    expect(preset).toBe(PRESET_SCHOOL_MODEL);
+  });
+
+  it('returns trueSizes preset', () => {
+    const preset = getPreset('trueSizes');
+    expect(preset).toBe(PRESET_TRUE_SIZES);
+  });
+
+  it('returns explorer preset', () => {
+    const preset = getPreset('explorer');
+    expect(preset).toBe(PRESET_EXPLORER);
+  });
+
+  it('returns massComparison preset', () => {
+    const preset = getPreset('massComparison');
+    expect(preset).toBe(PRESET_MASS_COMPARISON);
+  });
+});
+
+describe('createMapping', () => {
+  it('creates a mapping from distance and size configs', () => {
+    const mapping = createMapping(DISTANCE_LINEAR, SIZE_NORMALIZED);
+    expect(mapping.distanceScale).toBe(DISTANCE_LINEAR);
+    expect(mapping.sizeScale).toBe(SIZE_NORMALIZED);
+  });
+
+  it('creates custom mapping configurations', () => {
+    const distanceScale = { kind: 'linear' as const, auToScene: 10 };
+    const sizeScale = {
+      kind: 'realRelativeToMercury' as const,
+      mercuryRadiusScene: 0.05,
+    };
+    const mapping = createMapping(distanceScale, sizeScale);
+    expect(mapping.distanceScale).toEqual(distanceScale);
+    expect(mapping.sizeScale).toEqual(sizeScale);
+  });
+});
+
+describe('createMappingFromSimple', () => {
+  describe('distance scale selection', () => {
+    it('uses log distance for log scale', () => {
+      const mapping = createMappingFromSimple('log', 'normalized');
+      expect(mapping.distanceScale.kind).toBe('log10');
+    });
+
+    it('uses linear ratio distance for real size with real distance', () => {
+      const mapping = createMappingFromSimple('real', 'real');
+      expect(mapping.distanceScale.kind).toBe('linear');
+      expect(
+        (mapping.distanceScale as { kind: 'linear'; auToScene: number }).auToScene
+      ).toBe(20);
+    });
+
+    it('uses standard linear distance for physical size with real distance', () => {
+      const mapping = createMappingFromSimple('real', 'physical');
+      expect(mapping.distanceScale.kind).toBe('linear');
+      expect(
+        (mapping.distanceScale as { kind: 'linear'; auToScene: number }).auToScene
+      ).toBe(3);
+    });
+  });
+
+  describe('size scale selection', () => {
+    it('uses physical size scale for physical', () => {
+      const mapping = createMappingFromSimple('real', 'physical');
+      expect(mapping.sizeScale.kind).toBe('physical');
+    });
+
+    it('uses realRelativeToMercury for real size', () => {
+      const mapping = createMappingFromSimple('real', 'real');
+      expect(mapping.sizeScale.kind).toBe('realRelativeToMercury');
+    });
+
+    it('uses normalizedRelativeToJupiter for normalized size', () => {
+      const mapping = createMappingFromSimple('real', 'normalized');
+      expect(mapping.sizeScale.kind).toBe('normalizedRelativeToJupiter');
+    });
+  });
+
+  describe('all combinations', () => {
+    it('log + normalized', () => {
+      const mapping = createMappingFromSimple('log', 'normalized');
+      expect(mapping.distanceScale.kind).toBe('log10');
+      expect(mapping.sizeScale.kind).toBe('normalizedRelativeToJupiter');
+    });
+
+    it('log + real', () => {
+      const mapping = createMappingFromSimple('log', 'real');
+      expect(mapping.distanceScale.kind).toBe('log10');
+      expect(mapping.sizeScale.kind).toBe('realRelativeToMercury');
+    });
+
+    it('log + physical', () => {
+      const mapping = createMappingFromSimple('log', 'physical');
+      expect(mapping.distanceScale.kind).toBe('log10');
+      expect(mapping.sizeScale.kind).toBe('physical');
+    });
+
+    it('real + normalized', () => {
+      const mapping = createMappingFromSimple('real', 'normalized');
+      expect(mapping.distanceScale.kind).toBe('linear');
+      expect(mapping.sizeScale.kind).toBe('normalizedRelativeToJupiter');
+    });
   });
 });
 
