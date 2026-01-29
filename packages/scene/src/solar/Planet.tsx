@@ -10,43 +10,32 @@ import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Mesh, Group, ShaderMaterial } from 'three';
 import { useRenderProfile } from '../render-profile';
+import { BODY_PHYSICAL } from '@worldline-kinematics/astro';
 
 // ---------------------------------------------------------------------------
-// Planet Physical Data
+// Planet Physical Data Helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Sidereal rotation periods in seconds.
- * Source: NASA Planetary Fact Sheets
- * https://nssdc.gsfc.nasa.gov/planetary/factsheet/
+ * Gets sidereal rotation period in seconds for a body.
+ * Data sourced from @worldline-kinematics/astro (JPL SSD / NASA Fact Sheets).
  */
-const SIDEREAL_PERIODS: Record<string, number> = {
-  Mercury: 5067031.68, // 58.646 days
-  Venus: -20996798.4, // -243.018 days (retrograde)
-  Earth: 86164.0905, // 23h 56m 4.0905s
-  Mars: 88642.6848, // 24h 37m 22.6848s
-  Jupiter: 35730, // 9h 55m 30s (mean)
-  Saturn: 38362.4, // 10h 39m 22.4s (mean)
-  Uranus: -62063.712, // -17h 14m 23.712s (retrograde)
-  Neptune: 57996, // 16h 6m 36s
-  Moon: 2360591.5, // 27.32 days (synchronous)
-};
+function getSiderealPeriodSeconds(name: string): number {
+  const bodyData = BODY_PHYSICAL[name as keyof typeof BODY_PHYSICAL];
+  if (!bodyData?.siderealRotationHours) return 86400; // Default to 1 day
+  // BODY_PHYSICAL stores hours, convert to seconds
+  return bodyData.siderealRotationHours * 3600;
+}
 
 /**
- * Axial tilts in degrees.
- * Source: NASA Planetary Fact Sheets
+ * Gets axial tilt (obliquity) in degrees for a body.
+ * Data sourced from @worldline-kinematics/astro (JPL SSD / NASA Fact Sheets).
  */
-const AXIAL_TILTS: Record<string, number> = {
-  Mercury: 0.034,
-  Venus: 177.4, // Nearly upside down
-  Earth: 23.44,
-  Mars: 25.19,
-  Jupiter: 3.13,
-  Saturn: 26.73,
-  Uranus: 97.77, // Rolls on its side
-  Neptune: 28.32,
-  Moon: 6.68,
-};
+function getAxialTiltDeg(name: string): number {
+  const bodyData = BODY_PHYSICAL[name as keyof typeof BODY_PHYSICAL];
+  if (!bodyData) return 0;
+  return bodyData.obliquityDeg ?? 0;
+}
 
 /**
  * Texture paths by planet.
@@ -124,6 +113,25 @@ const ATMOSPHERE_PROPS: Record<
 const OBLIQUITY_J2000 = THREE.MathUtils.degToRad(23.439281);
 
 /**
+ * Computes a body orientation quaternion from north pole and rotation angle.
+ * Used to align objects (like markers) with a planet's orientation.
+ *
+ * @param northPole North pole direction as [x, y, z] array
+ * @param rotationAngleDeg Rotation angle in degrees (IAU W angle)
+ * @param textureOffsetDeg Optional texture offset in degrees
+ * @returns Quaternion as [x, y, z, w] array
+ */
+export function computeBodyQuaternion(
+  northPole: [number, number, number],
+  rotationAngleDeg: number,
+  textureOffsetDeg = 0
+): [number, number, number, number] {
+  const pole = new THREE.Vector3(northPole[0], northPole[1], northPole[2]);
+  const q = makeBodyQuaternion(pole, rotationAngleDeg, textureOffsetDeg);
+  return [q.x, q.y, q.z, q.w];
+}
+
+/**
  * EQJ (J2000 equatorial) north pole direction in scene coordinates.
  * Scene uses ECL-to-Three convention where Y is ecliptic north.
  * EQJ north is tilted by obliquity from ecliptic north.
@@ -135,10 +143,24 @@ const EQJ_NORTH_SCENE = new THREE.Vector3(
 ).normalize();
 
 /**
- * Vernal equinox direction (shared by EQJ and ECL frames) in scene coordinates.
- * This is the +X axis in both frames.
+ * EQJ +Y axis in scene coordinates (RA = 90° on the equator).
+ *
+ * For the IAU rotation model, the reference direction for W is effectively:
+ *   x0 ∝ Z_ref × pole
+ * which points toward RA = α + 90° (where α is the pole's right ascension).
+ *
+ * For Earth (pole ≈ EQJ north, α ≈ 0°), Z_ref × pole degenerates to zero length.
+ * The limiting direction is RA = 90°, i.e. EQJ +Y (not EQJ +X).
+ *
+ * Derivation: EQJ +Y = (0, 1, 0)
+ *   -> ECL (rotate by +ε about X): (0, cos(ε), sin(ε))
+ *   -> Scene (x, z, -y): (0, sin(ε), -cos(ε))
  */
-const EQJ_X_SCENE = new THREE.Vector3(1, 0, 0);
+const EQJ_Y_SCENE = new THREE.Vector3(
+  0,
+  Math.sin(OBLIQUITY_J2000),
+  -Math.cos(OBLIQUITY_J2000)
+).normalize();
 
 /**
  * Creates a quaternion that orients a body based on its north pole direction
@@ -167,10 +189,17 @@ function makeBodyQuaternion(
   // This is perpendicular to both north poles.
   let x0 = new THREE.Vector3().crossVectors(EQJ_NORTH_SCENE, pole);
 
-  if (x0.lengthSq() < 1e-12) {
-    // Degenerate case: pole is nearly aligned with EQJ north (Earth-like).
-    // Use vernal equinox direction projected onto body equator plane.
-    x0 = EQJ_X_SCENE.clone();
+  // Detect near-alignment (Earth-like) and use stable limiting direction.
+  // When pole is nearly aligned with EQJ north, the cross product becomes
+  // numerically unstable - tiny changes in pole direction can flip x0 by 180°.
+  // dot > 0.9999 means within ~0.8° of alignment.
+  const aligned = Math.abs(pole.dot(EQJ_NORTH_SCENE)) > 0.9999;
+
+  if (aligned || x0.lengthSq() < 1e-12) {
+    // Degenerate case: pole ~ aligned with EQJ north (Earth).
+    // The IAU W angle is referenced to RA = α + 90°. For Earth α ≈ 0° => RA ≈ 90°.
+    // So the correct stable fallback is EQJ +Y (not EQJ +X).
+    x0 = EQJ_Y_SCENE.clone();
     // Project onto the plane perpendicular to pole
     x0.sub(pole.clone().multiplyScalar(x0.dot(pole)));
   }
@@ -214,8 +243,11 @@ function computeBodyOrientation(
     return { quaternion: [q.x, q.y, q.z, q.w] };
   }
 
-  // Fall back to legacy euler rotation (Z-axis tilt only)
-  return { rotation: [0, 0, tiltRadians ?? 0] };
+  // Fall back to legacy euler rotation (X-axis tilt).
+  // In eclToThreeJs convention: ecliptic plane = XZ, +Y = ecliptic north.
+  // Earth's pole is tilted from ecliptic north toward the solstice direction.
+  // A positive tilt about -X (negative rotation about X) gives (0, cos(ε), -sin(ε)).
+  return { rotation: [-(tiltRadians ?? 0), 0, 0] };
 }
 
 // ---------------------------------------------------------------------------
@@ -236,6 +268,11 @@ const ATMOSPHERE_VERTEX = `
 
 /**
  * Atmospheric scattering shell shader.
+ * Includes day/night modulation to avoid glow on the night side.
+ *
+ * Note: This shader is rendered with THREE.BackSide, meaning we see the
+ * inside of the atmosphere sphere. The rim calculation uses abs() to
+ * handle the inverted normals correctly.
  */
 const ATMOSPHERE_FRAGMENT = `
   uniform vec3 uSunDirection;
@@ -248,23 +285,33 @@ const ATMOSPHERE_FRAGMENT = `
 
   void main() {
     vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    vec3 normal = normalize(vNormal);
 
-    // Rim intensity (atmosphere visible at edges)
-    float rim = 1.0 - max(dot(viewDir, vNormal), 0.0);
+    // Rim intensity for BackSide rendering:
+    // - At limb: dot ≈ 0, so abs(dot) ≈ 0, rim ≈ 1 (glow at edges)
+    // - At center: abs(dot) ≈ 1, rim ≈ 0 (no glow in center)
+    // Using abs() handles both front and back face cases correctly.
+    float cosAngle = dot(viewDir, normal);
+    float rim = 1.0 - abs(cosAngle);
     rim = pow(rim, uFalloff);
 
-    // Day/night factor
-    float dayFactor = dot(vNormal, uSunDirection);
-    float daySide = smoothstep(-0.3, 0.5, dayFactor);
+    // Day/night factor based on sun direction.
+    // normal points outward from sphere center (correct for lighting calc).
+    // uSunDirection points from planet toward sun.
+    vec3 sunDir = normalize(uSunDirection);
+    float sun = dot(normal, sunDir);
 
-    // Scatter color varies with angle to sun
-    vec3 dayColor = uAtmosphereColor;
-    vec3 twilightColor = uAtmosphereColor * vec3(1.2, 0.8, 0.6); // Warmer at terminator
-    vec3 nightColor = uAtmosphereColor * 0.1;
+    // Only show atmosphere on day side (sun > 0) with soft terminator
+    // smoothstep(-0.1, 0.3, sun) transitions from night to day
+    float daylight = smoothstep(-0.1, 0.3, sun);
 
-    vec3 color = mix(nightColor, mix(twilightColor, dayColor, smoothstep(0.0, 0.3, dayFactor)), daySide);
+    // Skip rendering on night side completely
+    if (daylight < 0.01) discard;
 
-    float alpha = rim * uIntensity * (0.3 + daySide * 0.7);
+    vec3 color = uAtmosphereColor;
+
+    // Alpha modulated by both rim effect and daylight
+    float alpha = rim * uIntensity * 0.8 * daylight;
     if (alpha < 0.005) discard;
 
     gl_FragColor = vec4(color, alpha);
@@ -362,8 +409,14 @@ function RotationAxis({
     if (northPole) {
       return new THREE.Vector3(northPole[0], northPole[1], northPole[2]).normalize();
     }
-    // Fallback: use tilt angle (rotation around X axis from Y-up)
-    return new THREE.Vector3(0, Math.cos(tiltRadians), Math.sin(tiltRadians)).normalize();
+    // Fallback: use tilt angle (rotation around -X axis from Y-up)
+    // This matches the fallback rotation in computeBodyOrientation: [-(tiltRadians), 0, 0]
+    // Rotating (0, 1, 0) by -ε around X gives (0, cos(ε), -sin(ε))
+    return new THREE.Vector3(
+      0,
+      Math.cos(tiltRadians),
+      -Math.sin(tiltRadians)
+    ).normalize();
   }, [northPole, tiltRadians]);
 
   // North and south pole positions
@@ -473,11 +526,16 @@ export function Planet({
 
   // Axial tilt (legacy fallback when northPole not provided)
   const tiltRadians = useMemo(() => {
-    const tilt = axialTilt ?? AXIAL_TILTS[name] ?? 0;
+    const tilt = axialTilt ?? getAxialTiltDeg(name);
     return (tilt * Math.PI) / 180;
   }, [name, axialTilt]);
 
   // Compute body orientation (quaternion if northPole provided, else legacy rotation)
+  // Extract north pole components for stable dependency tracking
+  const npX = northPole?.[0];
+  const npY = northPole?.[1];
+  const npZ = northPole?.[2];
+
   const bodyOrientation = useMemo(() => {
     return computeBodyOrientation(
       northPole,
@@ -485,10 +543,10 @@ export function Planet({
       textureOffsetDeg,
       tiltRadians
     );
-  }, [northPole, rotationAngleDeg, textureOffsetDeg, tiltRadians]);
+  }, [northPole, npX, npY, npZ, rotationAngleDeg, textureOffsetDeg, tiltRadians]);
 
   // Rotation animation
-  const siderealPeriod = SIDEREAL_PERIODS[name] ?? 86400;
+  const siderealPeriod = getSiderealPeriodSeconds(name);
   // Let the profile be the single source of truth for segments
   // (do not multiply for cinematic - that defeats adaptive quality)
   const segments = profile.sphereSegments;
@@ -741,7 +799,7 @@ function CinematicPlanetInner({
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 16;
 
-  // Atmosphere shader uniforms - stable configuration
+  // Atmosphere shader uniforms
   const atmosphereUniforms = useMemo(
     () => ({
       uSunDirection: { value: sunDirection.clone() },
@@ -749,9 +807,9 @@ function CinematicPlanetInner({
       uIntensity: { value: atmosphereProps?.intensity ?? 0.3 },
       uFalloff: { value: atmosphereProps?.falloff ?? 3.0 },
     }),
-    [atmosphereColor, atmosphereProps]
+    [atmosphereColor, atmosphereProps, sunDirection]
   );
-  // Update sun direction in useFrame to avoid uniform churn
+  // Update sun direction in useFrame for smooth animation
   useFrame(() => {
     if (atmosphereShaderRef.current?.uniforms?.uSunDirection) {
       atmosphereShaderRef.current.uniforms.uSunDirection.value.copy(sunDirection);
@@ -915,7 +973,7 @@ function EarthPlanet({
   dayTexture.colorSpace = THREE.SRGBColorSpace;
   dayTexture.anisotropy = 16;
 
-  // Atmosphere shader uniforms - simple, stable configuration
+  // Atmosphere shader uniforms
   const atmosphereUniforms = useMemo(
     () => ({
       uSunDirection: { value: sunDirection.clone() },
@@ -923,9 +981,9 @@ function EarthPlanet({
       uIntensity: { value: atmosphereProps?.intensity ?? 0.5 },
       uFalloff: { value: atmosphereProps?.falloff ?? 3.0 },
     }),
-    [atmosphereColor, atmosphereProps]
+    [atmosphereColor, atmosphereProps, sunDirection]
   );
-  // Update sun direction in useFrame to avoid uniform churn
+  // Update sun direction in useFrame for smooth animation
   useFrame(() => {
     if (atmosphereShaderRef.current?.uniforms?.uSunDirection) {
       atmosphereShaderRef.current.uniforms.uSunDirection.value.copy(sunDirection);

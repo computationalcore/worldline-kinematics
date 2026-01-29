@@ -6,7 +6,7 @@
  */
 
 export { Sun } from './Sun';
-export { Planet, type PlanetProps } from './Planet';
+export { Planet, type PlanetProps, computeBodyQuaternion } from './Planet';
 export { SaturnRings, type SaturnRingsProps } from './SaturnRings';
 
 // Future exports:

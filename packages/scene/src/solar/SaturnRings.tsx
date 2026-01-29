@@ -165,7 +165,7 @@ function RingSegment({
   // Memoize color to avoid creating new Color object on every render
   const ringColor = useMemo(() => new THREE.Color(ring.color), [ring.color]);
 
-  // Create uniforms once, update sunDirection in useFrame
+  // Create uniforms
   const uniforms = useMemo(
     () => ({
       uSunDirection: { value: sunDirection.clone() },
@@ -176,10 +176,10 @@ function RingSegment({
       uRingTexture: { value: null },
       uHasTexture: { value: 0.0 },
     }),
-    [innerRadius, outerRadius, ringColor, ring.opacity]
+    [innerRadius, outerRadius, ringColor, ring.opacity, sunDirection]
   );
 
-  // Update sunDirection in useFrame to avoid recreating shader material
+  // Update sunDirection in useFrame for smooth animation
   useFrame(() => {
     const u = shaderRef.current?.uniforms?.uSunDirection;
     if (u) {
@@ -272,9 +272,10 @@ export function SaturnRings({
   }, [tiltDegrees, applyTilt]);
 
   // Orientation props: use quaternion if provided, otherwise legacy tilt
+  // Negative rotation to match Planet.tsx fallback: [-ε, 0, 0] gives pole (0, cos(ε), -sin(ε))
   const orientationProps = quaternion
     ? { quaternion: quaternion }
-    : { rotation: [tiltRadians, 0, 0] as [number, number, number] };
+    : { rotation: [-tiltRadians, 0, 0] as [number, number, number] };
 
   const segments = Math.max(64, profile.sphereSegments);
 
