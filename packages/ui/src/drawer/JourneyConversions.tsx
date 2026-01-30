@@ -10,6 +10,9 @@ import {
   lightYearProgress,
 } from '@worldline-kinematics/core';
 import type { JourneyConversionsProps } from './types';
+import { getUIContent } from '../i18n';
+
+const content = getUIContent('en');
 
 /**
  * Format a number with appropriate precision.
@@ -38,7 +41,7 @@ export function JourneyConversions({ totalDistanceKm }: JourneyConversionsProps)
   return (
     <div className="px-3 py-2 border-t border-white/10">
       <div className="text-[9px] sm:text-[10px] text-neutral-500 uppercase tracking-wider mb-2">
-        In Perspective
+        {content.journey.inPerspective}
       </div>
 
       <div className="grid grid-cols-3 gap-2">
@@ -48,7 +51,7 @@ export function JourneyConversions({ totalDistanceKm }: JourneyConversionsProps)
             {formatNumber(moonTrips)}
           </div>
           <div className="text-[8px] sm:text-[9px] text-neutral-400 leading-tight">
-            Moon round trips
+            {content.journey.moonRoundTrips}
           </div>
         </div>
 
@@ -58,7 +61,7 @@ export function JourneyConversions({ totalDistanceKm }: JourneyConversionsProps)
             {formatNumber(pluto)}
           </div>
           <div className="text-[8px] sm:text-[9px] text-neutral-400 leading-tight">
-            Times to Pluto
+            {content.journey.timesToPluto}
           </div>
         </div>
 
@@ -68,7 +71,7 @@ export function JourneyConversions({ totalDistanceKm }: JourneyConversionsProps)
             {lyProgress < 0.01 ? '<0.01' : lyProgress.toFixed(2)}%
           </div>
           <div className="text-[8px] sm:text-[9px] text-neutral-400 leading-tight">
-            of a light-year
+            {content.journey.ofALightYear}
           </div>
         </div>
       </div>

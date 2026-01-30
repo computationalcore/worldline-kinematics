@@ -157,8 +157,9 @@ export function useFullscreen(): FullscreenAPI {
 
   // Cleanup: exit fullscreen if component unmounts while fullscreen
   useEffect(() => {
+    const element = ref.current;
     return () => {
-      if (getFullscreenElement() === ref.current) {
+      if (getFullscreenElement() === element) {
         document.exitFullscreen?.().catch(() => {});
       }
     };

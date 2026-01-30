@@ -7,6 +7,9 @@
 
 import { cn } from '../utils';
 import type { JourneyHUDProps, SpeedUnit } from './types';
+import { getUIContent } from '../i18n';
+
+const content = getUIContent('en');
 
 const SPEED_UNITS: SpeedUnit[] = ['km/s', 'km/h', 'mph'];
 
@@ -32,7 +35,7 @@ export function JourneyHUD({ age, speedUnit, onSpeedUnitChange }: JourneyHUDProp
       {/* Mission Duration - prominent display */}
       <div className="text-center mb-2">
         <div className="text-[10px] text-neutral-400 uppercase tracking-wider mb-1">
-          Mission Duration
+          {content.journey.missionDuration}
         </div>
         <div
           className={cn(
@@ -73,9 +76,9 @@ export function JourneyHUD({ age, speedUnit, onSpeedUnitChange }: JourneyHUDProp
         <button
           onClick={cycleUnit}
           className="text-[10px] text-neutral-500 hover:text-neutral-300 transition-colors px-2 py-1 rounded hover:bg-white/5"
-          title="Click to change units"
+          title={content.journey.clickToChangeUnits}
         >
-          Units: {speedUnit}
+          {content.journey.unitsLabel} {speedUnit}
         </button>
       </div>
     </div>

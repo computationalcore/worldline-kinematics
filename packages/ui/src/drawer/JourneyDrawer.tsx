@@ -11,7 +11,11 @@ import { cn } from '../utils';
 import { JourneyHUD } from './JourneyHUD';
 import { JourneyBreakdown } from './JourneyBreakdown';
 import { JourneyConversions } from './JourneyConversions';
+import { SpacetimeIcon } from '../icons';
 import type { JourneyDrawerProps, FrameInfo, DrawerState } from './types';
+import { getUIContent } from '../i18n';
+
+const content = getUIContent('en');
 
 /**
  * Build frame info array from worldline state.
@@ -23,32 +27,32 @@ function buildFrameInfo(worldline: JourneyDrawerProps['worldline']): FrameInfo[]
   return [
     {
       id: 'spin',
-      label: '1. Rotated (Spin)',
-      description: 'Distance from Earth spinning',
+      label: content.journey.frames.spin.label,
+      description: content.journey.frames.spin.description,
       distanceKm: worldline.distances.spin.distanceKm,
       speedKms: worldline.frames.spin.velocityKms,
       color: '#10b981', // emerald-500
     },
     {
       id: 'orbit',
-      label: '2. Orbited Sun',
-      description: 'Earth racing around the Sun',
+      label: content.journey.frames.orbit.label,
+      description: content.journey.frames.orbit.description,
       distanceKm: worldline.distances.orbit.distanceKm,
       speedKms: worldline.frames.orbit.velocityKms,
       color: '#3b82f6', // blue-500
     },
     {
       id: 'galaxy',
-      label: '3. Solar System Travel',
-      description: 'Sun moving around the Milky Way',
+      label: content.journey.frames.galaxy.label,
+      description: content.journey.frames.galaxy.description,
       distanceKm: worldline.distances.galaxy.distanceKm,
       speedKms: worldline.frames.galaxy.velocityKms,
       color: '#8b5cf6', // violet-500
     },
     {
       id: 'cmb',
-      label: '4. Galactic Travel',
-      description: 'Galaxy moving relative to CMB',
+      label: content.journey.frames.cmb.label,
+      description: content.journey.frames.cmb.description,
       distanceKm: worldline.distances.cmb.distanceKm,
       speedKms: worldline.frames.cmb.velocityKms,
       color: '#f59e0b', // amber-500
@@ -126,49 +130,67 @@ export function JourneyDrawer({
       )}
     >
       {/* Header with title */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
         <div className="flex items-center gap-2">
-          <svg
-            className="w-5 h-5 text-blue-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span className="text-base font-semibold text-white">Your Journey</span>
+          <SpacetimeIcon size="sm" id="drawer" />
+          <div>
+            <span className="text-base font-semibold text-white">
+              {content.journey.title}
+            </span>
+            <p className="text-[10px] text-white/50">{content.journey.subtitle}</p>
+          </div>
         </div>
-        <button
-          onClick={() => {
-            if (drawerState === 'peek') onStateChange('docked');
-            else if (drawerState === 'docked') onStateChange('expanded');
-            else if (drawerState === 'expanded') onStateChange('peek');
-          }}
-          className="p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
-          title={drawerState === 'expanded' ? 'Collapse' : 'Expand'}
-        >
-          <svg
-            className={cn(
-              'w-4 h-4 transition-transform',
-              drawerState === 'expanded' ? 'rotate-180' : ''
-            )}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => {
+              if (drawerState === 'peek') onStateChange('docked');
+              else if (drawerState === 'docked') onStateChange('expanded');
+              else if (drawerState === 'expanded') onStateChange('peek');
+            }}
+            className="p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
+            title={
+              drawerState === 'expanded'
+                ? content.journey.collapse
+                : content.journey.expand
+            }
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
+            <svg
+              className={cn(
+                'w-4 h-4 transition-transform',
+                drawerState === 'expanded' ? 'rotate-180' : ''
+              )}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 15l7-7 7 7"
+              />
+            </svg>
+          </button>
+          <button
+            onClick={() => onStateChange('closed')}
+            className="p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
+            title={content.journey.close}
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
               strokeWidth={2}
-              d="M5 15l7-7 7 7"
-            />
-          </svg>
-        </button>
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* HUD - always visible when drawer is open */}
@@ -188,10 +210,10 @@ export function JourneyDrawer({
         {isPreBirth && (
           <div className="px-4 py-6 text-center">
             <div className="text-amber-400 text-sm font-medium mb-1">
-              Journey Not Yet Started
+              {content.journey.journeyNotStarted}
             </div>
             <div className="text-neutral-400 text-xs">
-              Your cosmic journey begins at birth
+              {content.journey.journeyBeginsAtBirth}
             </div>
           </div>
         )}
@@ -205,7 +227,7 @@ export function JourneyDrawer({
         {(drawerState === 'docked' || drawerState === 'expanded') && !isPreBirth && (
           <div className="mx-3 mb-3 p-3 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-white/10">
             <div className="text-[10px] text-neutral-400 uppercase tracking-wider mb-1">
-              Total Distance Traveled
+              {content.journey.totalDistanceTraveled}
             </div>
             <div className="text-xl font-bold text-white tabular-nums">
               {totalDistanceKm >= 1e12
@@ -215,7 +237,7 @@ export function JourneyDrawer({
                   : `${(totalDistanceKm / 1e6).toFixed(2)} M km`}
             </div>
             <div className="text-xs text-neutral-400 mt-1">
-              Traveling at:{' '}
+              {content.journey.travelingAt}{' '}
               <span className="text-emerald-400 font-medium">
                 {totalSpeedKms.toFixed(2)} km/s
               </span>
@@ -235,7 +257,7 @@ export function JourneyDrawer({
               onClick={onChangeBirthDate}
               className="w-full py-1.5 text-[10px] sm:text-xs text-neutral-400 hover:text-white transition-colors"
             >
-              Change birth date
+              {content.journey.changeBirthDate}
             </button>
           </div>
         )}
@@ -245,7 +267,7 @@ export function JourneyDrawer({
       {drawerState === 'expanded' && (
         <div className="px-3 py-2 border-t border-white/10 bg-white/5">
           <p className="text-[9px] text-neutral-500 text-center">
-            All calculations run locally. Your data never leaves your browser.
+            {content.journey.privacy}
           </p>
         </div>
       )}

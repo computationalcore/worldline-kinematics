@@ -1,7 +1,28 @@
 {
   "name": "@worldline-kinematics/ui",
   "version": "0.1.0",
-  "description": "Design system components for worldline kinematics",
+  "description": "React UI components for cosmic journey visualization",
+  "keywords": [
+    "react",
+    "ui-components",
+    "design-system",
+    "radix-ui",
+    "tailwind",
+    "astronomy",
+    "katex",
+    "accessible"
+  ],
+  "homepage": "https://github.com/computationalcore/worldline-kinematics#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/computationalcore/worldline-kinematics.git",
+    "directory": "packages/ui"
+  },
+  "bugs": {
+    "url": "https://github.com/computationalcore/worldline-kinematics/issues"
+  },
+  "author": "Vin Busquet <computationalcore@gmail.com>",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -16,18 +37,20 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean --external react",
-    "dev": "tsup src/index.ts --format esm --dts --watch --external react",
+    "build": "tsup src/index.ts --format esm --dts --clean --external react --external react-dom",
+    "dev": "tsup src/index.ts --format esm --dts --watch --external react --external react-dom",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests",
-    "test:watch": "vitest"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@worldline-kinematics/core": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.4",
     "@radix-ui/react-slider": "^1.2.2",
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-toggle-group": "^1.1.0",
+    "@worldline-kinematics/core": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^11.15.0",
@@ -40,13 +63,18 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/katex": "^0.16.7",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "jsdom": "^27.4.0",
     "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "tsup": "^8.3.5",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.8"
+    "vitest": "^4.0.18"
   },
   "sideEffects": [
     "*.css"

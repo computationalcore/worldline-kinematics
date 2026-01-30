@@ -3,6 +3,9 @@
  */
 
 import { cn } from '../utils';
+import { getUIContent } from '../i18n';
+
+const content = getUIContent('en');
 
 interface PrivacyFooterProps {
   /** Additional CSS classes */
@@ -15,7 +18,7 @@ interface PrivacyFooterProps {
 export function PrivacyFooter({ className }: PrivacyFooterProps) {
   return (
     <footer className={cn('text-center text-sm text-neutral-500 py-4 px-6', className)}>
-      <p>All calculations run in your browser. Your birth date is never transmitted.</p>
+      <p>{content.common.privacyNotice}</p>
     </footer>
   );
 }
