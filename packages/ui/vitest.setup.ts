@@ -8,6 +8,8 @@ import { expect } from 'vitest';
 
 expect.extend(matchers);
 
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
 // Mock ResizeObserver (used by Radix UI)
 class ResizeObserver {
   observe() {}

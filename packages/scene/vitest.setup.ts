@@ -3,7 +3,12 @@
  *
  * Configures jsdom matchers and mocks WebGL context for Three.js testing.
  */
-import '@testing-library/jest-dom/vitest';
+import * as matchers from '@testing-library/jest-dom/matchers';
+import { expect } from 'vitest';
+
+expect.extend(matchers);
+
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 // Mock WebGL context for Three.js
 class WebGLRenderingContext {}

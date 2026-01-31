@@ -27,8 +27,6 @@ export default defineConfig({
         'src/**/index.ts', // Barrel exports
         'src/**/index.tsx',
       ],
-      // Thresholds for UI components
-      // Complex animated/modal components may need E2E testing for full coverage
       thresholds: {
         statements: 50,
         branches: 40,
