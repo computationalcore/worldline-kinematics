@@ -19,6 +19,11 @@ import {
   formatCompact,
   formatDistance,
   formatSpeed,
+  formatSpeedWithUnit,
+  formatDistanceFullWords,
+  formatDistanceCompactUnified,
+  formatNumberCompact,
+  formatStatistic,
 } from '../src/units/convert';
 import {
   KM_PER_MILE,
@@ -228,5 +233,287 @@ describe('formatSpeed', () => {
   it('formats in mph', () => {
     const result = formatSpeed(1, 'mph');
     expect(result).toContain('mph');
+  });
+});
+
+// =============================================================================
+// UNIFIED FORMATTING FUNCTIONS
+// =============================================================================
+
+describe('formatSpeedWithUnit', () => {
+  describe('km/s formatting', () => {
+    it('formats with 2 decimal places by default', () => {
+      expect(formatSpeedWithUnit(29.78, 'km/s')).toBe('29.78 km/s');
+    });
+
+    it('respects custom decimal places', () => {
+      expect(formatSpeedWithUnit(29.785, 'km/s', { decimalsKms: 3 })).toBe('29.785 km/s');
+      expect(formatSpeedWithUnit(29.785, 'km/s', { decimalsKms: 1 })).toBe('29.8 km/s');
+    });
+
+    it('handles zero', () => {
+      expect(formatSpeedWithUnit(0, 'km/s')).toBe('0.00 km/s');
+    });
+
+    it('handles very small speeds', () => {
+      expect(formatSpeedWithUnit(0.001, 'km/s')).toBe('0.00 km/s');
+      expect(formatSpeedWithUnit(0.001, 'km/s', { decimalsKms: 4 })).toBe('0.0010 km/s');
+    });
+  });
+
+  describe('km/h formatting', () => {
+    it('converts and formats correctly', () => {
+      // 1 km/s = 3600 km/h
+      const result = formatSpeedWithUnit(1, 'km/h');
+      expect(result).toContain('km/h');
+      expect(result).toContain('3,600');
+    });
+
+    it('rounds to whole numbers', () => {
+      // 10 km/s = 36000 km/h
+      const result = formatSpeedWithUnit(10, 'km/h');
+      expect(result).toBe('36,000 km/h');
+    });
+
+    it('handles Earth orbital speed', () => {
+      // 29.78 km/s = ~107,208 km/h
+      const result = formatSpeedWithUnit(29.78, 'km/h');
+      expect(result).toContain('km/h');
+    });
+  });
+
+  describe('mph formatting', () => {
+    it('converts using correct factor', () => {
+      // 1 km/s = 3600 km/h / 1.609344 = ~2236.936 mph
+      const result = formatSpeedWithUnit(1, 'mph');
+      expect(result).toContain('mph');
+      expect(result).toContain('2,237');
+    });
+
+    it('handles large speeds', () => {
+      // 100 km/s = ~223,694 mph
+      const result = formatSpeedWithUnit(100, 'mph');
+      expect(result).toContain('mph');
+    });
+  });
+
+  describe('useLocale option', () => {
+    it('omits locale formatting when useLocale is false', () => {
+      const result = formatSpeedWithUnit(10, 'km/h', { useLocale: false });
+      expect(result).toBe('36000 km/h');
+    });
+  });
+});
+
+describe('formatDistanceFullWords', () => {
+  describe('km unit', () => {
+    it('formats trillions', () => {
+      const result = formatDistanceFullWords(5.5e12, 'km');
+      expect(result.value).toBe('5.50');
+      expect(result.suffix).toBe('Trillion km');
+    });
+
+    it('formats billions', () => {
+      const result = formatDistanceFullWords(28e9, 'km');
+      expect(result.value).toBe('28.00');
+      expect(result.suffix).toBe('Billion km');
+    });
+
+    it('formats millions', () => {
+      const result = formatDistanceFullWords(5e6, 'km');
+      expect(result.value).toBe('5.00');
+      expect(result.suffix).toBe('Million km');
+    });
+
+    it('formats thousands', () => {
+      const result = formatDistanceFullWords(50000, 'km');
+      expect(result.value).toBe('50');
+      expect(result.suffix).toBe('Thousand km');
+    });
+
+    it('formats small values', () => {
+      const result = formatDistanceFullWords(500, 'km');
+      expect(result.value).toBe('500');
+      expect(result.suffix).toBe('km');
+    });
+  });
+
+  describe('miles unit', () => {
+    it('converts and formats in miles', () => {
+      // 10 billion km / 1.609344 = ~6.21 billion miles
+      const result = formatDistanceFullWords(1e10, 'miles');
+      expect(parseFloat(result.value)).toBeCloseTo(6.21, 1);
+      expect(result.suffix).toBe('Billion miles');
+    });
+
+    it('formats large distances in miles', () => {
+      // 1 trillion km / 1.609344 = ~621 billion miles
+      const result = formatDistanceFullWords(1e12, 'miles');
+      expect(parseFloat(result.value)).toBeCloseTo(621.37, 0);
+      expect(result.suffix).toBe('Billion miles');
+    });
+  });
+
+  describe('AU unit', () => {
+    it('formats AU for distances >= 1000 AU', () => {
+      // 1000 AU = 1.496e14 km
+      const result = formatDistanceFullWords(1.496e14, 'au');
+      expect(result.suffix).toBe('AU');
+    });
+
+    it('formats AU with decimals for smaller distances', () => {
+      // 1 AU = 1.496e8 km
+      const result = formatDistanceFullWords(1.496e8, 'au');
+      expect(result.suffix).toBe('AU');
+      expect(parseFloat(result.value)).toBeCloseTo(1, 1);
+    });
+  });
+
+  describe('translated suffixes', () => {
+    it('uses custom translations', () => {
+      const result = formatDistanceFullWords(5e9, 'km', {
+        billion: 'Milliarden',
+        million: 'Millionen',
+        thousand: 'Tausend',
+        trillion: 'Billionen',
+      });
+      expect(result.suffix).toBe('Milliarden km');
+    });
+
+    it('falls back to English for missing translations', () => {
+      const result = formatDistanceFullWords(5e9, 'km', {
+        million: 'Millionen',
+      });
+      expect(result.suffix).toBe('Billion km');
+    });
+  });
+});
+
+describe('formatDistanceCompactUnified', () => {
+  describe('km unit', () => {
+    it('formats trillions with T suffix', () => {
+      expect(formatDistanceCompactUnified(2.5e12, 'km')).toBe('2.50T km');
+    });
+
+    it('formats billions with B suffix', () => {
+      expect(formatDistanceCompactUnified(28e9, 'km')).toBe('28.00B km');
+    });
+
+    it('formats millions with M suffix', () => {
+      expect(formatDistanceCompactUnified(5e6, 'km')).toBe('5.00M km');
+    });
+
+    it('formats thousands with K suffix', () => {
+      expect(formatDistanceCompactUnified(50000, 'km')).toBe('50K km');
+    });
+
+    it('formats small values', () => {
+      expect(formatDistanceCompactUnified(500, 'km')).toBe('500 km');
+    });
+  });
+
+  describe('miles unit', () => {
+    it('converts and formats with mi abbreviation', () => {
+      // 10 billion km / 1.609344 = ~6.21 billion miles
+      const result = formatDistanceCompactUnified(1e10, 'miles');
+      expect(result).toMatch(/^\d+\.\d+B mi$/);
+    });
+
+    it('formats millions of miles', () => {
+      // 1 billion km / 1.609344 = ~621 million miles
+      const result = formatDistanceCompactUnified(1e9, 'miles');
+      expect(result).toMatch(/^\d+\.\d+M mi$/);
+    });
+  });
+
+  describe('AU unit', () => {
+    it('formats AU for values >= 0.01', () => {
+      // 1 AU = 1.496e8 km
+      const result = formatDistanceCompactUnified(1.496e8, 'au');
+      expect(result).toContain('AU');
+    });
+
+    it('formats in mAU for very small values', () => {
+      // 0.001 AU = 1.496e5 km
+      const result = formatDistanceCompactUnified(1.496e5, 'au');
+      expect(result).toContain('mAU');
+    });
+  });
+});
+
+describe('formatNumberCompact', () => {
+  it('formats billions with B suffix', () => {
+    expect(formatNumberCompact(5e9)).toBe('5.0B');
+    expect(formatNumberCompact(1.234e9)).toBe('1.2B');
+  });
+
+  it('formats millions with M suffix', () => {
+    expect(formatNumberCompact(5e6)).toBe('5.0M');
+    expect(formatNumberCompact(1.5e6)).toBe('1.5M');
+  });
+
+  it('formats thousands with K suffix', () => {
+    expect(formatNumberCompact(5000)).toBe('5.0K');
+    expect(formatNumberCompact(1500)).toBe('1.5K');
+  });
+
+  it('uses locale formatting for >= 100', () => {
+    const result = formatNumberCompact(500);
+    expect(result).toBe('500');
+  });
+
+  it('uses decimal places for >= 1', () => {
+    expect(formatNumberCompact(50)).toBe('50.0');
+    expect(formatNumberCompact(5.5)).toBe('5.5');
+  });
+
+  it('uses more precision for < 1', () => {
+    expect(formatNumberCompact(0.5)).toBe('0.500');
+    expect(formatNumberCompact(0.123)).toBe('0.123');
+  });
+
+  it('respects custom decimal places', () => {
+    expect(formatNumberCompact(5e6, 2)).toBe('5.00M');
+    expect(formatNumberCompact(5e6, 0)).toBe('5M');
+  });
+});
+
+describe('formatStatistic', () => {
+  it('formats >= 1M with M suffix and 1 decimal', () => {
+    expect(formatStatistic(5e6)).toBe('5.0M');
+    expect(formatStatistic(1.5e6)).toBe('1.5M');
+  });
+
+  it('formats >= 1000 with K suffix', () => {
+    expect(formatStatistic(5000)).toBe('5.0K');
+    expect(formatStatistic(1500)).toBe('1.5K');
+  });
+
+  it('formats >= 100 with no decimals', () => {
+    expect(formatStatistic(500)).toBe('500');
+    expect(formatStatistic(100)).toBe('100');
+  });
+
+  it('formats >= 10 with 1 decimal', () => {
+    expect(formatStatistic(50)).toBe('50.0');
+    expect(formatStatistic(15.5)).toBe('15.5');
+  });
+
+  it('formats >= 1 with 1 decimal', () => {
+    expect(formatStatistic(5)).toBe('5.0');
+    expect(formatStatistic(1.5)).toBe('1.5');
+  });
+
+  it('formats < 1 with 2 decimals', () => {
+    expect(formatStatistic(0.5)).toBe('0.50');
+    expect(formatStatistic(0.15)).toBe('0.15');
+  });
+
+  it('handles edge case at 1', () => {
+    expect(formatStatistic(1)).toBe('1.0');
+  });
+
+  it('handles zero', () => {
+    expect(formatStatistic(0)).toBe('0.00');
   });
 });

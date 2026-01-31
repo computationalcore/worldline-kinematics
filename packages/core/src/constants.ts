@@ -181,8 +181,29 @@ export const PARSEC_KM = 3.0857e13;
 
 /**
  * Kilometers per mile.
+ * Source: US National Bureau of Standards (exact definition)
  */
 export const KM_PER_MILE = 1.609344;
+
+/**
+ * Miles per kilometer.
+ * Derived: 1 / KM_PER_MILE
+ */
+export const MILES_PER_KM = 1 / KM_PER_MILE;
+
+/**
+ * Earth's equatorial circumference in km.
+ * Source: NASA Earth Fact Sheet
+ * (https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html)
+ */
+export const EARTH_CIRCUMFERENCE_KM = 40_075.017;
+
+/**
+ * Julian year in days (exactly 365.25 days).
+ * Source: IAU definition
+ * This is used for astronomical calculations, not calendar years.
+ */
+export const JULIAN_YEAR_DAYS = 365.25;
 
 /**
  * Moon mean distance from Earth in km.
@@ -195,3 +216,23 @@ export const MOON_MEAN_DISTANCE_KM = 384400;
  * Source: NASA
  */
 export const PLUTO_MEAN_DISTANCE_KM = 5_906_380_000;
+
+// =============================================================================
+// PLANETARY ORBITAL PERIODS
+// =============================================================================
+
+/**
+ * Orbital periods in Earth days for each planet.
+ * Source: NASA Planetary Fact Sheet
+ * (https://nssdc.gsfc.nasa.gov/planetary/factsheet/)
+ */
+export const ORBITAL_PERIODS_DAYS: Record<string, number> = {
+  Mercury: 87.97,
+  Venus: 224.7,
+  Earth: 365.25,
+  Mars: 686.98,
+  Jupiter: 4332.59,
+  Saturn: 10759.22,
+  Uranus: 30688.5,
+  Neptune: 60182,
+};

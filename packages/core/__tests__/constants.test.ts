@@ -29,8 +29,12 @@ import {
   LIGHT_YEAR_KM,
   PARSEC_KM,
   KM_PER_MILE,
+  MILES_PER_KM,
+  EARTH_CIRCUMFERENCE_KM,
+  JULIAN_YEAR_DAYS,
   MOON_MEAN_DISTANCE_KM,
   PLUTO_MEAN_DISTANCE_KM,
+  ORBITAL_PERIODS_DAYS,
 } from '../src/constants';
 
 describe('time constants', () => {
@@ -160,6 +164,73 @@ describe('unit conversion constants', () => {
   it('km per mile is standard value', () => {
     expect(KM_PER_MILE).toBe(1.609344);
   });
+
+  it('miles per km is inverse of km per mile', () => {
+    expect(MILES_PER_KM).toBeCloseTo(1 / KM_PER_MILE, 10);
+    expect(MILES_PER_KM * KM_PER_MILE).toBeCloseTo(1, 10);
+  });
+
+  it('Julian year is exactly 365.25 days', () => {
+    expect(JULIAN_YEAR_DAYS).toBe(365.25);
+  });
+
+  it('Julian year matches JULIAN_YEAR_SECONDS', () => {
+    const secondsPerDay = 86400;
+    expect(JULIAN_YEAR_DAYS * secondsPerDay).toBe(JULIAN_YEAR_SECONDS);
+  });
+});
+
+describe('Earth physical constants', () => {
+  it('Earth circumference is about 40,075 km', () => {
+    expect(EARTH_CIRCUMFERENCE_KM).toBeGreaterThan(40000);
+    expect(EARTH_CIRCUMFERENCE_KM).toBeLessThan(41000);
+  });
+
+  it('Earth circumference matches WGS84 equatorial calculation', () => {
+    // Circumference = 2 * PI * semi-major axis
+    const expected = 2 * Math.PI * (WGS84_SEMI_MAJOR_AXIS_M / 1000);
+    expect(EARTH_CIRCUMFERENCE_KM).toBeCloseTo(expected, 0);
+  });
+});
+
+describe('orbital periods', () => {
+  it('contains all 8 planets', () => {
+    const planets = Object.keys(ORBITAL_PERIODS_DAYS);
+    expect(planets).toHaveLength(8);
+    expect(planets).toContain('Mercury');
+    expect(planets).toContain('Venus');
+    expect(planets).toContain('Earth');
+    expect(planets).toContain('Mars');
+    expect(planets).toContain('Jupiter');
+    expect(planets).toContain('Saturn');
+    expect(planets).toContain('Uranus');
+    expect(planets).toContain('Neptune');
+  });
+
+  it('Earth orbital period is about 365.25 days', () => {
+    expect(ORBITAL_PERIODS_DAYS.Earth).toBe(365.25);
+  });
+
+  it('periods increase with distance from Sun', () => {
+    expect(ORBITAL_PERIODS_DAYS.Mercury).toBeLessThan(ORBITAL_PERIODS_DAYS.Venus!);
+    expect(ORBITAL_PERIODS_DAYS.Venus).toBeLessThan(ORBITAL_PERIODS_DAYS.Earth!);
+    expect(ORBITAL_PERIODS_DAYS.Earth).toBeLessThan(ORBITAL_PERIODS_DAYS.Mars!);
+    expect(ORBITAL_PERIODS_DAYS.Mars).toBeLessThan(ORBITAL_PERIODS_DAYS.Jupiter!);
+    expect(ORBITAL_PERIODS_DAYS.Jupiter).toBeLessThan(ORBITAL_PERIODS_DAYS.Saturn!);
+    expect(ORBITAL_PERIODS_DAYS.Saturn).toBeLessThan(ORBITAL_PERIODS_DAYS.Uranus!);
+    expect(ORBITAL_PERIODS_DAYS.Uranus).toBeLessThan(ORBITAL_PERIODS_DAYS.Neptune!);
+  });
+
+  it('Mercury period is about 88 days', () => {
+    expect(ORBITAL_PERIODS_DAYS.Mercury).toBeGreaterThan(85);
+    expect(ORBITAL_PERIODS_DAYS.Mercury).toBeLessThan(92);
+  });
+
+  it('Neptune period is about 165 years', () => {
+    const neptuneYears = (ORBITAL_PERIODS_DAYS.Neptune ?? 0) / 365.25;
+    expect(neptuneYears).toBeGreaterThan(160);
+    expect(neptuneYears).toBeLessThan(170);
+  });
 });
 
 describe('distance constants', () => {
@@ -202,6 +273,9 @@ describe('all constants are valid numbers', () => {
     LIGHT_YEAR_KM,
     PARSEC_KM,
     KM_PER_MILE,
+    MILES_PER_KM,
+    EARTH_CIRCUMFERENCE_KM,
+    JULIAN_YEAR_DAYS,
     MOON_MEAN_DISTANCE_KM,
     PLUTO_MEAN_DISTANCE_KM,
   };
@@ -212,4 +286,11 @@ describe('all constants are valid numbers', () => {
       expect(value).toBeGreaterThan(0);
     });
   }
+
+  it('all orbital periods are finite positive numbers', () => {
+    for (const [_planet, period] of Object.entries(ORBITAL_PERIODS_DAYS)) {
+      expect(Number.isFinite(period)).toBe(true);
+      expect(period).toBeGreaterThan(0);
+    }
+  });
 });
