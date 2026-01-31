@@ -5,7 +5,7 @@
   "description": "Cosmic Observer Motion Across Reference Frames",
   "repository": {
     "type": "git",
-    "url": "https://github.com/VinBusquet/worldline-kinematics"
+    "url": "https://github.com/computationalcore/worldline-kinematics"
   },
   "author": "Vin Busquet <computationalcore@gmail.com>",
   "license": "MIT",
@@ -24,21 +24,35 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "test:watch": "turbo test:watch",
-    "clean": "turbo clean && rm -rf node_modules",
-    "prepare": "husky"
+    "test:coverage": "turbo test:coverage",
+    "test:coverage:merge": "vitest run --coverage --workspace",
+    "test:ui": "vitest --ui",
+    "clean": "turbo clean && rm -rf node_modules coverage",
+    "prepare": "husky",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish",
+    "pack-all": "pnpm -r --filter './packages/*' pack"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.5.2",
+    "@changesets/cli": "^2.29.8",
     "@commitlint/cli": "^19.0.0",
     "@commitlint/config-conventional": "^19.0.0",
     "@eslint/js": "^9.0.0",
     "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/ui": "^4.0.18",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^10.0.0",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "happy-dom": "^20.5.0",
     "husky": "^9.0.0",
     "lint-staged": "^15.0.0",
     "prettier": "^3.4.0",
     "turbo": "^2.5.0",
     "typescript": "^5.6.3",
-    "typescript-eslint": "^8.0.0"
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^4.0.18"
   }
 }

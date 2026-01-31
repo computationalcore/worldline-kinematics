@@ -4,6 +4,7 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
   js.configs.recommended,
@@ -13,6 +14,9 @@ export default tseslint.config(
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
+    },
+    plugins: {
+      'react-hooks': reactHooks,
     },
     rules: {
       'no-console': 'error',
@@ -42,6 +46,9 @@ export default tseslint.config(
           property: 'only',
         },
       ],
+      // React hooks rules
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
     },
   },
   {

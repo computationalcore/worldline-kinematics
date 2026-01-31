@@ -1,0 +1,80 @@
+# Codecov configuration for worldline-kinematics
+# https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  precision: 2
+  round: down
+  range: "60...100"
+
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 2%
+        if_ci_failed: error
+
+      # Per-package coverage targets (matches vitest.workspace.ts)
+      # See vitest.workspace.ts for detailed justification
+      core:
+        paths:
+          - packages/core/src/**
+        target: 80%  # Threshold: 80%, Target: 90%
+        threshold: 2%
+
+      astro:
+        paths:
+          - packages/astro/src/**
+        target: 70%  # Threshold: 70%, Target: 80%
+        threshold: 5%
+
+      scene:
+        paths:
+          - packages/scene/src/**
+        target: 50%  # Threshold: 50%, Target: 70%
+        threshold: 5%
+
+      ui:
+        paths:
+          - packages/ui/src/**
+        target: 60%  # Threshold: 60%, Target: 75%
+        threshold: 5%
+
+    patch:
+      default:
+        target: 60%
+        threshold: 5%
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: true
+  require_base: no
+  require_head: yes
+
+flags:
+  unittests:
+    paths:
+      - packages/*/src/**
+    carryforward: true
+
+ignore:
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"
+  - "**/*.spec.tsx"
+  - "**/types.ts"
+  - "**/types/**"
+  - "**/*.d.ts"
+  - "**/index.ts"
+  - "**/*-entry.ts"
+  - "**/vitest.*.ts"
+  - "**/dist/**"
+  - "**/node_modules/**"
