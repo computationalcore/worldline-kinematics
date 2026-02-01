@@ -38,10 +38,15 @@ vi.mock('@react-three/fiber', async () => {
   };
 });
 
-// Mock drei Html component
+// Mock drei components
 vi.mock('@react-three/drei', async () => {
+  // shaderMaterial returns a component class that can be extended
+  const shaderMaterial = () => {
+    return class MockShaderMaterial extends THREE.ShaderMaterial {};
+  };
   return {
     Html: () => null,
+    shaderMaterial,
   };
 });
 

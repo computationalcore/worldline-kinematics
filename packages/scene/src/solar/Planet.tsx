@@ -4,9 +4,9 @@
 
 'use client';
 
-import { useRef, useMemo } from 'react';
-import { useFrame, useLoader } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import React, { useRef, useMemo } from 'react';
+import { useFrame, useLoader, extend } from '@react-three/fiber';
+import { Html, shaderMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Mesh, Group, ShaderMaterial } from 'three';
 import { useRenderProfile } from '../render-profile';
@@ -56,13 +56,199 @@ const TEXTURE_PATHS: Record<string, string> = {
 };
 
 /**
- * Additional Earth textures (8k resolution).
+ * Earth texture paths (8k resolution).
+ * Source: Solar System Scope (https://www.solarsystemscope.com/textures/)
+ *
+ * - day: Daylight surface map with terrain, oceans, vegetation
+ * - night: City lights visible on the dark side
+ * - clouds: Cloud layer overlay (optional, rendered as separate mesh)
  */
 const EARTH_TEXTURES = {
   day: '/textures/8k_earth_daymap.jpg',
   night: '/textures/8k_earth_nightmap.jpg',
   clouds: '/textures/8k_earth_clouds.jpg',
 };
+
+// ---------------------------------------------------------------------------
+// Earth Day/Night Shader (using drei shaderMaterial)
+// ---------------------------------------------------------------------------
+
+/**
+ * EarthMaterial - Custom shader for realistic day/night rendering.
+ *
+ * Features:
+ * - Day/night texture blending based on sun position
+ * - Sigmoid function for smooth terminator transition
+ * - Fresnel-based atmospheric rim lighting
+ * - City lights visible on night side
+ *
+ * References:
+ * - https://sangillee.com/2024-06-07-create-realistic-earth-with-shaders/
+ * - https://matiasgf.dev/experiments/earth
+ * - https://drei.docs.pmnd.rs/shaders/shader-material
+ */
+const EarthMaterial = shaderMaterial(
+  // Uniforms with default values
+  {
+    uDayTexture: null,
+    uNightTexture: null,
+    uSunDirection: new THREE.Vector3(1, 0, 0),
+  },
+  // Vertex shader (includes logdepthbuf for logarithmic depth buffer support)
+  /* glsl */ `
+    #include <common>
+    #include <logdepthbuf_pars_vertex>
+
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    varying vec3 vWorldPosition;
+
+    void main() {
+      vUv = uv;
+      vNormal = normalize(mat3(modelMatrix) * normal);
+      vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+
+      #include <logdepthbuf_vertex>
+    }
+  `,
+  // Fragment shader (includes logdepthbuf for logarithmic depth buffer support)
+  /* glsl */ `
+    #include <common>
+    #include <logdepthbuf_pars_fragment>
+
+    uniform sampler2D uDayTexture;
+    uniform sampler2D uNightTexture;
+    uniform vec3 uSunDirection;
+
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    varying vec3 vWorldPosition;
+
+    void main() {
+      vec3 normal = normalize(vNormal);
+      vec3 sunDir = normalize(uSunDirection);
+
+      // Sun-facing factor: -1 (away) to +1 (facing)
+      float cosAngle = dot(normal, sunDir);
+
+      // Sigmoid for smooth terminator (sharpness = 10.0)
+      float dayFactor = 1.0 / (1.0 + exp(-10.0 * cosAngle));
+
+      // Sample textures
+      vec4 dayColor = texture2D(uDayTexture, vUv);
+      vec4 nightColor = texture2D(uNightTexture, vUv);
+
+      // Boost city lights visibility
+      nightColor.rgb *= 1.8;
+
+      // Blend day/night
+      vec3 color = mix(nightColor.rgb, dayColor.rgb, dayFactor);
+
+      // Fresnel rim lighting (atmosphere effect)
+      vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+      float fresnel = pow(1.0 - max(dot(viewDir, normal), 0.0), 3.0);
+      vec3 rimLight = vec3(0.3, 0.6, 1.0) * fresnel * 0.15 * dayFactor;
+      color += rimLight;
+
+      gl_FragColor = vec4(color, 1.0);
+
+      #include <logdepthbuf_fragment>
+    }
+  `
+);
+
+// Extend for JSX usage: <earthMaterial />
+extend({ EarthMaterial });
+
+// Standalone shader strings for use with standard shaderMaterial
+// IMPORTANT: Include logdepthbuf chunks for compatibility with logarithmicDepthBuffer
+const EARTH_VERTEX_SHADER = /* glsl */ `
+  #include <common>
+  #include <logdepthbuf_pars_vertex>
+
+  varying vec2 vUv;
+  varying vec3 vNormal;
+  varying vec3 vWorldPosition;
+
+  void main() {
+    vUv = uv;
+    vNormal = normalize(mat3(modelMatrix) * normal);
+    vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+
+    #include <logdepthbuf_vertex>
+  }
+`;
+
+const EARTH_FRAGMENT_SHADER = /* glsl */ `
+  #include <common>
+  #include <logdepthbuf_pars_fragment>
+
+  uniform sampler2D uDayTexture;
+  uniform sampler2D uNightTexture;
+  uniform vec3 uSunDirection;
+
+  varying vec2 vUv;
+  varying vec3 vNormal;
+  varying vec3 vWorldPosition;
+
+  void main() {
+    vec3 normal = normalize(vNormal);
+    vec3 sunDir = normalize(uSunDirection);
+
+    // Sun-facing factor: -1 (away) to +1 (facing)
+    float cosAngle = dot(normal, sunDir);
+
+    // Sigmoid for smooth terminator (sharpness = 10.0)
+    float dayFactor = 1.0 / (1.0 + exp(-10.0 * cosAngle));
+
+    // Sample textures
+    vec4 dayColor = texture2D(uDayTexture, vUv);
+    vec4 nightColor = texture2D(uNightTexture, vUv);
+
+    // Boost city lights visibility
+    nightColor.rgb *= 1.8;
+
+    // Blend day/night
+    vec3 color = mix(nightColor.rgb, dayColor.rgb, dayFactor);
+
+    // Fresnel rim lighting (atmosphere effect)
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    float fresnel = pow(1.0 - max(dot(viewDir, normal), 0.0), 3.0);
+    vec3 rimLight = vec3(0.3, 0.6, 1.0) * fresnel * 0.15 * dayFactor;
+    color += rimLight;
+
+    gl_FragColor = vec4(color, 1.0);
+
+    #include <logdepthbuf_fragment>
+  }
+`;
+
+// Type for EarthMaterial with uniforms as properties
+type EarthMaterialImpl = THREE.ShaderMaterial & {
+  uDayTexture: THREE.Texture | null;
+  uNightTexture: THREE.Texture | null;
+  uSunDirection: THREE.Vector3;
+};
+
+// Augment R3F's JSX types to include our custom material
+declare module '@react-three/fiber' {
+  interface ThreeElements {
+    earthMaterial: {
+      ref?: React.Ref<EarthMaterialImpl>;
+      key?: React.Key;
+      attach?: string;
+      uDayTexture?: THREE.Texture | null;
+      uNightTexture?: THREE.Texture | null;
+      uSunDirection?: THREE.Vector3;
+      // Standard material props
+      depthWrite?: boolean;
+      depthTest?: boolean;
+      transparent?: boolean;
+    };
+  }
+}
 
 /**
  * Planet type categories for shader selection.
@@ -143,24 +329,19 @@ const EQJ_NORTH_SCENE = new THREE.Vector3(
 ).normalize();
 
 /**
- * EQJ +Y axis in scene coordinates (RA = 90° on the equator).
- *
- * For the IAU rotation model, the reference direction for W is effectively:
- *   x0 ∝ Z_ref × pole
- * which points toward RA = α + 90° (where α is the pole's right ascension).
- *
- * For Earth (pole ≈ EQJ north, α ≈ 0°), Z_ref × pole degenerates to zero length.
- * The limiting direction is RA = 90°, i.e. EQJ +Y (not EQJ +X).
- *
- * Derivation: EQJ +Y = (0, 1, 0)
- *   -> ECL (rotate by +ε about X): (0, cos(ε), sin(ε))
- *   -> Scene (x, z, -y): (0, sin(ε), -cos(ε))
+ * EQJ +X in scene coordinates (vernal equinox direction).
+ * This direction survives EQJ→ECL and ECL→scene transforms as +X.
  */
-const EQJ_Y_SCENE = new THREE.Vector3(
-  0,
-  Math.sin(OBLIQUITY_J2000),
-  -Math.cos(OBLIQUITY_J2000)
-).normalize();
+const EQJ_X_SCENE = new THREE.Vector3(1, 0, 0);
+
+/**
+ * EQJ +Y axis in scene coordinates, computed robustly via cross product.
+ * Y = Z × X in a right-handed basis (where Z is north).
+ * This guarantees orthogonality and correct handedness.
+ */
+const EQJ_Y_SCENE = new THREE.Vector3()
+  .crossVectors(EQJ_NORTH_SCENE, EQJ_X_SCENE)
+  .normalize();
 
 /**
  * Creates a quaternion that orients a body based on its north pole direction
@@ -185,27 +366,39 @@ function makeBodyQuaternion(
 ): THREE.Quaternion {
   const pole = northPoleScene.clone().normalize();
 
-  // Compute node direction: intersection of EQJ equator plane and body equator plane.
-  // This is perpendicular to both north poles.
-  let x0 = new THREE.Vector3().crossVectors(EQJ_NORTH_SCENE, pole);
+  // Compute x0 (node direction) using EQJ basis to avoid catastrophic cancellation.
+  // When pole ≈ EQJ_NORTH, cross(EQJ_NORTH, pole) subtracts nearly equal large terms.
+  // Instead, project pole onto EQJ X/Y plane and construct x0 analytically:
+  // In EQJ basis: Z × pole = (-py, px, 0), so x0 = -py*X + px*Y (normalized)
+  const px = pole.dot(EQJ_X_SCENE);
+  const py = pole.dot(EQJ_Y_SCENE);
+  const r2 = px * px + py * py;
 
-  // Detect near-alignment (Earth-like) and use stable limiting direction.
-  // When pole is nearly aligned with EQJ north, the cross product becomes
-  // numerically unstable - tiny changes in pole direction can flip x0 by 180°.
-  // dot > 0.9999 means within ~0.8° of alignment.
-  const aligned = Math.abs(pole.dot(EQJ_NORTH_SCENE)) > 0.9999;
+  const x0 = new THREE.Vector3();
 
-  if (aligned || x0.lengthSq() < 1e-12) {
-    // Degenerate case: pole ~ aligned with EQJ north (Earth).
-    // The IAU W angle is referenced to RA = α + 90°. For Earth α ≈ 0° => RA ≈ 90°.
-    // So the correct stable fallback is EQJ +Y (not EQJ +X).
-    x0 = EQJ_Y_SCENE.clone();
-    // Project onto the plane perpendicular to pole
-    x0.sub(pole.clone().multiplyScalar(x0.dot(pole)));
+  if (r2 < 1e-12) {
+    // Truly degenerate: pole ~ EQJ north, alpha undefined.
+    // Use IAU-conventional limiting direction for Earth-like cases (RA = 90°).
+    x0.copy(EQJ_Y_SCENE);
+  } else {
+    const invR = 1 / Math.sqrt(r2);
+    // x0 = normalize(Z × pole) = (-py * X + px * Y) / |projection|
+    x0.copy(EQJ_X_SCENE).multiplyScalar(-py * invR);
+    x0.addScaledVector(EQJ_Y_SCENE, px * invR);
   }
-  x0.normalize();
 
-  // Apply the W rotation around the pole
+  // Ensure perfectly perpendicular to pole (cheap safety)
+  x0.sub(pole.clone().multiplyScalar(x0.dot(pole))).normalize();
+
+  // Force deterministic half-plane choice in near-degenerate region
+  // to prevent 180° snaps when scrubbing time.
+  // Earth-like poles have r2 ~ 1e-6 to 7e-6 due to precession; use 1e-4
+  // for ample margin. No other planet has r2 below 0.2 (Mars is nearest at ~0.36).
+  if (r2 < 1e-4 && x0.dot(EQJ_Y_SCENE) < 0) {
+    x0.negate();
+  }
+
+  // Apply W rotation around the pole
   const W = THREE.MathUtils.degToRad(spinDeg + textureOffsetDeg);
   const qW = new THREE.Quaternion().setFromAxisAngle(pole, W);
 
@@ -507,7 +700,8 @@ export function Planet({
   // Get texture path - always provide a valid path for the hook
   const texturePath = TEXTURE_PATHS[name] || '/textures/2k_moon.jpg';
 
-  // Sun direction (computed early for use in shaders)
+  // Sun direction: vector pointing FROM planet TOWARD the Sun.
+  // Used by shaders to determine which surfaces face the Sun (daytime).
   const sunDirection = useMemo(() => {
     return new THREE.Vector3(
       sunPosition[0] - position[0],
@@ -575,6 +769,8 @@ export function Planet({
           label={label}
           highlighted={highlighted}
           onClick={onClick}
+          realtimeClouds={realtimeClouds}
+          epochMs={epochMs}
         />
         {showRotationAxis && (
           <group position={position}>
@@ -659,6 +855,8 @@ interface StandardPlanetProps {
   label?: string;
   highlighted: boolean;
   onClick?: () => void;
+  realtimeClouds?: boolean;
+  epochMs?: number;
 }
 
 function StandardPlanet({
@@ -667,39 +865,63 @@ function StandardPlanet({
   radius,
   color: _color,
   texturePath,
-  sunDirection: _sunDirection,
-  atmosphereColor: _atmosphereColor,
-  atmosphereProps: _atmosphereProps,
+  sunDirection,
+  atmosphereColor,
+  atmosphereProps,
   tiltRadians: _tiltRadians,
   bodyOrientation,
   segments,
-  siderealPeriod: _siderealPeriod,
-  isAnimated: _isAnimated,
-  rotationSpeedMultiplier: _rotationSpeedMultiplier,
-  animationMode: _animationMode,
+  siderealPeriod,
+  isAnimated,
+  rotationSpeedMultiplier,
+  animationMode,
   showLabel,
   label,
   highlighted,
   onClick,
+  realtimeClouds,
+  epochMs,
 }: StandardPlanetProps) {
   const groupRef = useRef<Group>(null);
   const meshRef = useRef<Mesh>(null);
 
+  // Check if this is Earth - render with special shaders
+  const isEarth = name === 'Earth';
+
   // These props are kept for API compatibility but not used in standard mode
   // Standard mode uses MeshStandardMaterial which gets lighting from the scene
   void _color;
-  void _siderealPeriod;
-  void _isAnimated;
-  void _rotationSpeedMultiplier;
-  void _animationMode;
-  void _sunDirection;
-  void _atmosphereColor;
-  void _atmosphereProps;
 
   // Load texture
   const texture = useLoader(THREE.TextureLoader, texturePath);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 16;
+
+  // If this is Earth, render with special Earth shaders (even in standard mode)
+  if (isEarth) {
+    return (
+      <EarthPlanet
+        position={position}
+        radius={radius}
+        texturePath={texturePath}
+        sunDirection={sunDirection}
+        atmosphereColor={atmosphereColor}
+        atmosphereProps={atmosphereProps}
+        bodyOrientation={bodyOrientation}
+        segments={segments}
+        siderealPeriod={siderealPeriod}
+        isAnimated={isAnimated}
+        rotationSpeedMultiplier={rotationSpeedMultiplier}
+        animationMode={animationMode}
+        showLabel={showLabel}
+        label={label}
+        highlighted={highlighted}
+        onClick={onClick}
+        realtimeClouds={realtimeClouds}
+        epochMs={epochMs}
+      />
+    );
+  }
 
   // Apply orientation: quaternion if available, otherwise legacy rotation
   const orientationProps = bodyOrientation.quaternion
@@ -712,8 +934,6 @@ function StandardPlanet({
         <mesh
           ref={meshRef}
           renderOrder={0}
-          castShadow
-          receiveShadow
           onClick={(e) => {
             e.stopPropagation();
             onClick?.();
@@ -854,8 +1074,6 @@ function CinematicPlanetInner({
         <mesh
           ref={meshRef}
           renderOrder={0}
-          castShadow
-          receiveShadow
           onClick={(e) => {
             e.stopPropagation();
             onClick?.();
@@ -968,10 +1186,28 @@ function EarthPlanet({
   void _realtimeClouds;
   void _epochMs;
 
-  // Load Earth day texture
+  // Load Earth textures (day and night for day/night blending)
   const dayTexture = useLoader(THREE.TextureLoader, EARTH_TEXTURES.day);
+  const nightTexture = useLoader(THREE.TextureLoader, EARTH_TEXTURES.night);
+
+  // Configure textures for best quality
   dayTexture.colorSpace = THREE.SRGBColorSpace;
   dayTexture.anisotropy = 16;
+  nightTexture.colorSpace = THREE.SRGBColorSpace;
+  nightTexture.anisotropy = 16;
+
+  // Refs for shader materials (to update uniforms per frame)
+  const earthShaderRef = useRef<ShaderMaterial>(null);
+
+  // Earth day/night shader uniforms
+  const earthUniforms = useMemo(
+    () => ({
+      uDayTexture: { value: dayTexture },
+      uNightTexture: { value: nightTexture },
+      uSunDirection: { value: sunDirection.clone() },
+    }),
+    [dayTexture, nightTexture, sunDirection]
+  );
 
   // Atmosphere shader uniforms
   const atmosphereUniforms = useMemo(
@@ -983,8 +1219,14 @@ function EarthPlanet({
     }),
     [atmosphereColor, atmosphereProps, sunDirection]
   );
-  // Update sun direction in useFrame for smooth animation
+
+  // Update sun direction each frame for smooth animation
   useFrame(() => {
+    // Update Earth shader sun direction
+    if (earthShaderRef.current?.uniforms?.uSunDirection) {
+      earthShaderRef.current.uniforms.uSunDirection.value.copy(sunDirection);
+    }
+    // Update atmosphere shader sun direction
     if (atmosphereShaderRef.current?.uniforms?.uSunDirection) {
       atmosphereShaderRef.current.uniforms.uSunDirection.value.copy(sunDirection);
     }
@@ -998,12 +1240,10 @@ function EarthPlanet({
   return (
     <group ref={groupRef} position={position}>
       <group {...orientationProps}>
-        {/* Main Earth sphere - MeshStandardMaterial for proper PBR lighting and shadows */}
+        {/* Main Earth sphere with day/night shader */}
         <mesh
           ref={meshRef}
           renderOrder={0}
-          castShadow
-          receiveShadow
           onClick={(e) => {
             e.stopPropagation();
             onClick?.();
@@ -1017,10 +1257,19 @@ function EarthPlanet({
           }}
         >
           <sphereGeometry args={[radius, segments, segments]} />
-          <meshStandardMaterial map={dayTexture} roughness={0.8} metalness={0.0} />
+          <shaderMaterial
+            ref={earthShaderRef}
+            vertexShader={EARTH_VERTEX_SHADER}
+            fragmentShader={EARTH_FRAGMENT_SHADER}
+            uniforms={earthUniforms}
+            depthWrite={true}
+            depthTest={true}
+            transparent={false}
+            side={THREE.FrontSide}
+          />
         </mesh>
 
-        {/* Atmosphere shell - single transparent overlay */}
+        {/* Atmosphere shell with day/night aware glow */}
         <mesh renderOrder={100}>
           <sphereGeometry args={[radius * 1.02, segments, segments]} />
           <shaderMaterial

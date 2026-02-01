@@ -226,7 +226,7 @@ export function Sun({
   position = [0, 0, 0],
   lightIntensity = 3,
   lightDistance = 0,
-  castShadow = true,
+  castShadow = false,
   shadowMapSize = 2048,
 }: SunProps) {
   const { profile, initialized } = useRenderProfile();
