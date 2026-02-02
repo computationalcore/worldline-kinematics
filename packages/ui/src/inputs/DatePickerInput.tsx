@@ -41,7 +41,7 @@ const MONTH_NAMES_EN = [
 const MONTH_NAMES_PT = [
   'Janeiro',
   'Fevereiro',
-  'Marco',
+  'Março',
   'Abril',
   'Maio',
   'Junho',

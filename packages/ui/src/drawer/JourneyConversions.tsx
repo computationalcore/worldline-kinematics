@@ -8,32 +8,13 @@ import {
   moonRoundTrips,
   plutoTrips,
   lightYearProgress,
+  formatNumberCompact,
 } from '@worldline-kinematics/core';
 import type { JourneyConversionsProps } from './types';
 import { getUIContent } from '../i18n';
 
-const content = getUIContent('en');
-
-/**
- * Format a number with appropriate precision.
- */
-function formatNumber(n: number): string {
-  if (n >= 1000000) {
-    return `${(n / 1000000).toFixed(1)}M`;
-  }
-  if (n >= 1000) {
-    return `${(n / 1000).toFixed(1)}K`;
-  }
-  if (n >= 100) {
-    return Math.floor(n).toLocaleString();
-  }
-  if (n >= 1) {
-    return n.toFixed(1);
-  }
-  return n.toFixed(3);
-}
-
-export function JourneyConversions({ totalDistanceKm }: JourneyConversionsProps) {
+export function JourneyConversions({ totalDistanceKm, locale }: JourneyConversionsProps) {
+  const content = getUIContent(locale ?? 'en');
   const moonTrips = moonRoundTrips(totalDistanceKm);
   const pluto = plutoTrips(totalDistanceKm);
   const lyProgress = lightYearProgress(totalDistanceKm);
@@ -48,7 +29,7 @@ export function JourneyConversions({ totalDistanceKm }: JourneyConversionsProps)
         {/* Moon round trips */}
         <div className="bg-white/5 rounded-lg p-2 text-center">
           <div className="text-lg sm:text-xl font-bold text-blue-400 tabular-nums">
-            {formatNumber(moonTrips)}
+            {formatNumberCompact(moonTrips)}
           </div>
           <div className="text-[8px] sm:text-[9px] text-neutral-400 leading-tight">
             {content.journey.moonRoundTrips}
@@ -58,7 +39,7 @@ export function JourneyConversions({ totalDistanceKm }: JourneyConversionsProps)
         {/* Pluto passes */}
         <div className="bg-white/5 rounded-lg p-2 text-center">
           <div className="text-lg sm:text-xl font-bold text-purple-400 tabular-nums">
-            {formatNumber(pluto)}
+            {formatNumberCompact(pluto)}
           </div>
           <div className="text-[8px] sm:text-[9px] text-neutral-400 leading-tight">
             {content.journey.timesToPluto}

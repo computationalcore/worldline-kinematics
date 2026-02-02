@@ -49,7 +49,7 @@ export const LOCALE_NAMES: Record<SupportedLocale, string> = {
 /**
  * Modal title translations.
  */
-const MODAL_TITLES: Record<string, { title: string; description: string }> = {
+const MODAL_TITLES: Record<SupportedLocale, { title: string; description: string }> = {
   en: { title: 'Select Language', description: 'Choose your preferred language' },
   pt: { title: 'Selecionar Idioma', description: 'Escolha seu idioma preferido' },
   es: { title: 'Seleccionar idioma', description: 'Elige tu idioma preferido' },

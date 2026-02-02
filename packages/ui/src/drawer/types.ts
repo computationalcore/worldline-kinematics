@@ -3,6 +3,10 @@
  */
 
 import type { WorldlineState, AgeDuration } from '@worldline-kinematics/core';
+import type { FrameInfo, FrameInfoWithPercentage, FrameId } from '../hooks/useFrameInfo';
+
+// Re-export FrameInfo from the shared hooks module
+export type { FrameInfo, FrameInfoWithPercentage, FrameId };
 
 /**
  * Drawer visibility states.
@@ -19,18 +23,6 @@ export type DrawerState = 'closed' | 'peek' | 'docked' | 'expanded';
 export type SpeedUnit = 'km/s' | 'km/h' | 'mph';
 
 /**
- * Frame information for display.
- */
-export interface FrameInfo {
-  id: 'spin' | 'orbit' | 'galaxy' | 'cmb';
-  label: string;
-  description: string;
-  distanceKm: number;
-  speedKms: number;
-  color: string;
-}
-
-/**
  * Props for the main JourneyDrawer component.
  */
 export interface JourneyDrawerProps {
@@ -41,6 +33,7 @@ export interface JourneyDrawerProps {
   speedUnit: SpeedUnit;
   onSpeedUnitChange: (unit: SpeedUnit) => void;
   onChangeBirthDate: () => void;
+  locale?: string;
 }
 
 /**
@@ -54,6 +47,7 @@ export interface JourneyHUDProps {
   onSpeedUnitChange: (unit: SpeedUnit) => void;
   drawerState: DrawerState;
   onStateChange: (state: DrawerState) => void;
+  locale?: string;
 }
 
 /**
@@ -62,6 +56,7 @@ export interface JourneyHUDProps {
 export interface JourneyBreakdownProps {
   frames: FrameInfo[];
   speedUnit: SpeedUnit;
+  locale?: string;
 }
 
 /**
@@ -69,4 +64,5 @@ export interface JourneyBreakdownProps {
  */
 export interface JourneyConversionsProps {
   totalDistanceKm: number;
+  locale?: string;
 }

@@ -7,6 +7,16 @@ import { renderHook, act } from '@testing-library/react';
 import { useCinematicMode } from '../src/hooks/useCinematicMode';
 import { useFullscreen } from '../src/hooks/useFullscreen';
 import { useGeolocation } from '../src/hooks/useGeolocation';
+import {
+  FRAME_COLORS,
+  buildFrameInfo,
+  buildFrameInfoWithPercentages,
+  useFrameInfo,
+  computeTotalDistance,
+  computeTotalSpeed,
+} from '../src/hooks/useFrameInfo';
+import { getUIContent } from '../src/i18n';
+import type { WorldlineState } from '@worldline-kinematics/core';
 
 describe('useCinematicMode', () => {
   describe('initial state', () => {
@@ -489,5 +499,207 @@ describe('useGeolocation', () => {
       expect(result.current.error).toBe('Geolocation is not supported by your browser');
       expect(result.current.loading).toBe(false);
     });
+  });
+});
+
+// Mock WorldlineState for testing
+const createMockWorldline = (
+  spinDistance = 1_000_000,
+  orbitDistance = 28_000_000_000,
+  galaxyDistance = 200_000_000_000,
+  cmbDistance = 350_000_000_000
+): WorldlineState => ({
+  birthInstant: new Date('1990-01-01'),
+  latitudeDeg: 45,
+  durationSeconds: 1_000_000_000,
+  frames: {
+    spin: { velocityKms: 0.465, accelerationKms2: 0, tangentialDirectionDeg: 90 },
+    orbit: { velocityKms: 29.78, accelerationKms2: 0, tangentialDirectionDeg: 0 },
+    galaxy: { velocityKms: 220, accelerationKms2: 0, tangentialDirectionDeg: 0 },
+    cmb: { velocityKms: 369.82, accelerationKms2: 0, tangentialDirectionDeg: 0 },
+  },
+  distances: {
+    spin: { distanceKm: spinDistance, circumnavigations: 0 },
+    orbit: { distanceKm: orbitDistance, orbits: 0 },
+    galaxy: { distanceKm: galaxyDistance, galacticOrbits: 0 },
+    cmb: { distanceKm: cmbDistance, lightYears: 0 },
+  },
+});
+
+describe('FRAME_COLORS', () => {
+  it('contains all four frame colors', () => {
+    expect(FRAME_COLORS.spin).toBe('#10b981');
+    expect(FRAME_COLORS.orbit).toBe('#3b82f6');
+    expect(FRAME_COLORS.galaxy).toBe('#8b5cf6');
+    expect(FRAME_COLORS.cmb).toBe('#f59e0b');
+  });
+
+  it('has exactly 4 colors', () => {
+    expect(Object.keys(FRAME_COLORS)).toHaveLength(4);
+  });
+});
+
+describe('buildFrameInfo', () => {
+  const translations = getUIContent('en');
+
+  it('returns empty array for null worldline', () => {
+    const result = buildFrameInfo(null, translations);
+    expect(result).toEqual([]);
+  });
+
+  it('returns four frames with correct structure', () => {
+    const worldline = createMockWorldline();
+    const result = buildFrameInfo(worldline, translations);
+
+    expect(result).toHaveLength(4);
+    expect(result.map((f) => f.id)).toEqual(['spin', 'orbit', 'galaxy', 'cmb']);
+  });
+
+  it('populates correct distances and speeds', () => {
+    const worldline = createMockWorldline(100, 200, 300, 400);
+    const result = buildFrameInfo(worldline, translations);
+
+    expect(result[0]!.distanceKm).toBe(100);
+    expect(result[0]!.speedKms).toBe(0.465);
+    expect(result[1]!.distanceKm).toBe(200);
+    expect(result[1]!.speedKms).toBe(29.78);
+    expect(result[2]!.distanceKm).toBe(300);
+    expect(result[2]!.speedKms).toBe(220);
+    expect(result[3]!.distanceKm).toBe(400);
+    expect(result[3]!.speedKms).toBe(369.82);
+  });
+
+  it('uses correct colors from FRAME_COLORS', () => {
+    const worldline = createMockWorldline();
+    const result = buildFrameInfo(worldline, translations);
+
+    expect(result[0]!.color).toBe(FRAME_COLORS.spin);
+    expect(result[1]!.color).toBe(FRAME_COLORS.orbit);
+    expect(result[2]!.color).toBe(FRAME_COLORS.galaxy);
+    expect(result[3]!.color).toBe(FRAME_COLORS.cmb);
+  });
+
+  it('uses translated labels and descriptions', () => {
+    const worldline = createMockWorldline();
+    const result = buildFrameInfo(worldline, translations);
+
+    expect(result[0]!.label).toBe(translations.journey.frames.spin.label);
+    expect(result[0]!.description).toBe(translations.journey.frames.spin.description);
+    expect(result[1]!.label).toBe(translations.journey.frames.orbit.label);
+    expect(result[2]!.label).toBe(translations.journey.frames.galaxy.label);
+    expect(result[3]!.label).toBe(translations.journey.frames.cmb.label);
+  });
+});
+
+describe('buildFrameInfoWithPercentages', () => {
+  const translations = getUIContent('en');
+
+  it('returns empty array for null worldline', () => {
+    const result = buildFrameInfoWithPercentages(null, translations);
+    expect(result).toEqual([]);
+  });
+
+  it('calculates correct percentages', () => {
+    // Create worldline with known percentages
+    const worldline = createMockWorldline(10, 20, 30, 40);
+    const result = buildFrameInfoWithPercentages(worldline, translations);
+
+    // Total = 100, so percentages should match distances
+    expect(result[0]!.percentage).toBe(10);
+    expect(result[1]!.percentage).toBe(20);
+    expect(result[2]!.percentage).toBe(30);
+    expect(result[3]!.percentage).toBe(40);
+  });
+
+  it('percentages sum to 100', () => {
+    const worldline = createMockWorldline();
+    const result = buildFrameInfoWithPercentages(worldline, translations);
+
+    const totalPercentage = result.reduce((sum, f) => sum + f.percentage, 0);
+    expect(totalPercentage).toBeCloseTo(100, 10);
+  });
+
+  it('handles zero total distance gracefully', () => {
+    const worldline = createMockWorldline(0, 0, 0, 0);
+    const result = buildFrameInfoWithPercentages(worldline, translations);
+
+    // All percentages should be 0 when total is 0
+    expect(result.every((f) => f.percentage === 0)).toBe(true);
+  });
+});
+
+describe('useFrameInfo', () => {
+  it('returns empty array for null worldline', () => {
+    const { result } = renderHook(() => useFrameInfo(null));
+    expect(result.current).toEqual([]);
+  });
+
+  it('returns frame info for valid worldline', () => {
+    const worldline = createMockWorldline();
+    const { result } = renderHook(() => useFrameInfo(worldline));
+
+    expect(result.current).toHaveLength(4);
+    expect(result.current[0]!.id).toBe('spin');
+  });
+
+  it('returns frame info with percentages when includePercentages is true', () => {
+    const worldline = createMockWorldline();
+    const { result } = renderHook(() => useFrameInfo(worldline, 'en', true));
+
+    expect(result.current).toHaveLength(4);
+    expect(result.current[0]).toHaveProperty('percentage');
+  });
+
+  it('memoizes result when worldline does not change', () => {
+    const worldline = createMockWorldline();
+    const { result, rerender } = renderHook(() => useFrameInfo(worldline));
+
+    const firstResult = result.current;
+    rerender();
+    const secondResult = result.current;
+
+    expect(firstResult).toBe(secondResult);
+  });
+
+  it('uses different translations based on locale', () => {
+    const worldline = createMockWorldline();
+    const { result: enResult } = renderHook(() => useFrameInfo(worldline, 'en'));
+    const { result: ptResult } = renderHook(() => useFrameInfo(worldline, 'pt'));
+
+    // Labels should be different for different locales
+    expect(enResult.current[0]!.label).not.toBe(ptResult.current[0]!.label);
+  });
+});
+
+describe('computeTotalDistance', () => {
+  it('returns 0 for null worldline', () => {
+    expect(computeTotalDistance(null)).toBe(0);
+  });
+
+  it('sums all frame distances', () => {
+    const worldline = createMockWorldline(10, 20, 30, 40);
+    expect(computeTotalDistance(worldline)).toBe(100);
+  });
+
+  it('handles large distances correctly', () => {
+    const worldline = createMockWorldline(
+      1_000_000,
+      28_000_000_000,
+      200_000_000_000,
+      350_000_000_000
+    );
+    expect(computeTotalDistance(worldline)).toBe(578_001_000_000);
+  });
+});
+
+describe('computeTotalSpeed', () => {
+  it('returns 0 for null worldline', () => {
+    expect(computeTotalSpeed(null)).toBe(0);
+  });
+
+  it('sums all frame speeds', () => {
+    const worldline = createMockWorldline();
+    // 0.465 + 29.78 + 220 + 369.82 = 620.065
+    expect(computeTotalSpeed(worldline)).toBeCloseTo(620.065, 3);
   });
 });

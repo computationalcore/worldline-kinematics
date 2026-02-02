@@ -46,7 +46,7 @@ describe('JourneyBreakdown', () => {
   describe('rendering', () => {
     it('renders section header', () => {
       render(<JourneyBreakdown frames={sampleFrames} speedUnit="km/s" />);
-      expect(screen.getByText('Distance by Reference Frame')).toBeInTheDocument();
+      expect(screen.getByText('Distance Breakdown')).toBeInTheDocument();
     });
 
     it('renders all frame labels', () => {
@@ -72,15 +72,13 @@ describe('JourneyBreakdown', () => {
     it('formats millions of km with M suffix', () => {
       const frames: FrameInfo[] = [{ ...sampleFrames[0]!, distanceKm: 5_000_000 }];
       render(<JourneyBreakdown frames={frames} speedUnit="km/s" />);
-      expect(screen.getByText('5.00')).toBeInTheDocument();
-      expect(screen.getByText('M km')).toBeInTheDocument();
+      expect(screen.getByText('5.00M km')).toBeInTheDocument();
     });
 
     it('formats billions of km with B suffix', () => {
       const frames: FrameInfo[] = [{ ...sampleFrames[0]!, distanceKm: 28_000_000_000 }];
       render(<JourneyBreakdown frames={frames} speedUnit="km/s" />);
-      expect(screen.getByText('28.00')).toBeInTheDocument();
-      expect(screen.getByText('B km')).toBeInTheDocument();
+      expect(screen.getByText('28.00B km')).toBeInTheDocument();
     });
 
     it('formats trillions of km with T suffix', () => {
@@ -88,43 +86,42 @@ describe('JourneyBreakdown', () => {
         { ...sampleFrames[0]!, distanceKm: 2_500_000_000_000 },
       ];
       render(<JourneyBreakdown frames={frames} speedUnit="km/s" />);
-      expect(screen.getByText('2.50')).toBeInTheDocument();
-      expect(screen.getByText('T km')).toBeInTheDocument();
+      expect(screen.getByText('2.50T km')).toBeInTheDocument();
     });
 
-    it('formats smaller distances in km', () => {
+    it('formats smaller distances with K suffix', () => {
       const frames: FrameInfo[] = [{ ...sampleFrames[0]!, distanceKm: 500_000 }];
       render(<JourneyBreakdown frames={frames} speedUnit="km/s" />);
-      expect(screen.getByText('km')).toBeInTheDocument();
+      expect(screen.getByText('500K km')).toBeInTheDocument();
     });
   });
 
   describe('speed units', () => {
-    it('displays km/s with 2 decimal places', () => {
+    it('displays km/s with 2 decimal places and unit', () => {
       const frames: FrameInfo[] = [{ ...sampleFrames[0]!, speedKms: 29.78 }];
       render(<JourneyBreakdown frames={frames} speedUnit="km/s" />);
-      expect(screen.getByText('29.78')).toBeInTheDocument();
+      expect(screen.getByText('29.78 km/s')).toBeInTheDocument();
     });
 
     it('displays km/h for frame speeds', () => {
       const frames: FrameInfo[] = [{ ...sampleFrames[0]!, speedKms: 10 }];
       render(<JourneyBreakdown frames={frames} speedUnit="km/h" />);
       // 10 km/s = 36,000 km/h
-      expect(screen.getByText('36K')).toBeInTheDocument();
+      expect(screen.getByText('36,000 km/h')).toBeInTheDocument();
     });
 
     it('displays mph for frame speeds', () => {
       const frames: FrameInfo[] = [{ ...sampleFrames[0]!, speedKms: 10 }];
       render(<JourneyBreakdown frames={frames} speedUnit="mph" />);
-      // 10 km/s = ~22,369 mph, formatCompact with 0 decimals = "22K"
-      expect(screen.getByText('22K')).toBeInTheDocument();
+      // 10 km/s = ~22,369 mph
+      expect(screen.getByText('22,369 mph')).toBeInTheDocument();
     });
   });
 
   describe('empty state', () => {
     it('renders header even with empty frames', () => {
       render(<JourneyBreakdown frames={[]} speedUnit="km/s" />);
-      expect(screen.getByText('Distance by Reference Frame')).toBeInTheDocument();
+      expect(screen.getByText('Distance Breakdown')).toBeInTheDocument();
     });
   });
 });

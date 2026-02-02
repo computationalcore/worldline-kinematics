@@ -9,11 +9,15 @@ import { cn } from '../utils';
 import type { JourneyHUDProps, SpeedUnit } from './types';
 import { getUIContent } from '../i18n';
 
-const content = getUIContent('en');
-
 const SPEED_UNITS: SpeedUnit[] = ['km/s', 'km/h', 'mph'];
 
-export function JourneyHUD({ age, speedUnit, onSpeedUnitChange }: JourneyHUDProps) {
+export function JourneyHUD({
+  age,
+  speedUnit,
+  onSpeedUnitChange,
+  locale,
+}: JourneyHUDProps) {
+  const content = getUIContent(locale ?? 'en');
   const cycleUnit = () => {
     const idx = SPEED_UNITS.indexOf(speedUnit);
     const nextIdx = (idx + 1) % SPEED_UNITS.length;

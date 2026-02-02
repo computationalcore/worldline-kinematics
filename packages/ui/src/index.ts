@@ -17,6 +17,9 @@ export * from './layout';
 // Drawer components
 export * from './drawer';
 
+// Share components
+export * from './share';
+
 // Icons
 export * from './icons';
 

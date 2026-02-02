@@ -9,3 +9,13 @@ export {
   type UseCinematicModeOptions,
   type UseCinematicModeReturn,
 } from './useCinematicMode';
+export { useShareJourney } from './useShareJourney';
+// FrameInfo and related types are exported from drawer/types.ts to avoid duplicate exports
+export {
+  useFrameInfo,
+  buildFrameInfo,
+  buildFrameInfoWithPercentages,
+  computeTotalDistance,
+  computeTotalSpeed,
+  FRAME_COLORS,
+} from './useFrameInfo';

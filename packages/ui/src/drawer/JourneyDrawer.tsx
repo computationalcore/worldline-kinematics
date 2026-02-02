@@ -6,59 +6,19 @@
 
 'use client';
 
-import { useMemo } from 'react';
 import { cn } from '../utils';
 import { JourneyHUD } from './JourneyHUD';
 import { JourneyBreakdown } from './JourneyBreakdown';
 import { JourneyConversions } from './JourneyConversions';
 import { SpacetimeIcon } from '../icons';
-import type { JourneyDrawerProps, FrameInfo, DrawerState } from './types';
+import type { JourneyDrawerProps, DrawerState } from './types';
 import { getUIContent } from '../i18n';
-
-const content = getUIContent('en');
-
-/**
- * Build frame info array from worldline state.
- * Labels match the Cosmic Odometer style.
- */
-function buildFrameInfo(worldline: JourneyDrawerProps['worldline']): FrameInfo[] {
-  if (!worldline) return [];
-
-  return [
-    {
-      id: 'spin',
-      label: content.journey.frames.spin.label,
-      description: content.journey.frames.spin.description,
-      distanceKm: worldline.distances.spin.distanceKm,
-      speedKms: worldline.frames.spin.velocityKms,
-      color: '#10b981', // emerald-500
-    },
-    {
-      id: 'orbit',
-      label: content.journey.frames.orbit.label,
-      description: content.journey.frames.orbit.description,
-      distanceKm: worldline.distances.orbit.distanceKm,
-      speedKms: worldline.frames.orbit.velocityKms,
-      color: '#3b82f6', // blue-500
-    },
-    {
-      id: 'galaxy',
-      label: content.journey.frames.galaxy.label,
-      description: content.journey.frames.galaxy.description,
-      distanceKm: worldline.distances.galaxy.distanceKm,
-      speedKms: worldline.frames.galaxy.velocityKms,
-      color: '#8b5cf6', // violet-500
-    },
-    {
-      id: 'cmb',
-      label: content.journey.frames.cmb.label,
-      description: content.journey.frames.cmb.description,
-      distanceKm: worldline.distances.cmb.distanceKm,
-      speedKms: worldline.frames.cmb.velocityKms,
-      color: '#f59e0b', // amber-500
-    },
-  ];
-}
+import { formatDistanceCompactUnified } from '@worldline-kinematics/core';
+import {
+  useFrameInfo,
+  computeTotalDistance,
+  computeTotalSpeed,
+} from '../hooks/useFrameInfo';
 
 /**
  * Get drawer height class based on state.
@@ -86,24 +46,12 @@ export function JourneyDrawer({
   speedUnit,
   onSpeedUnitChange,
   onChangeBirthDate,
+  locale,
 }: JourneyDrawerProps) {
-  const frames = useMemo(() => buildFrameInfo(worldline), [worldline]);
-
-  // Calculate totals
-  const totalDistanceKm = worldline
-    ? worldline.distances.spin.distanceKm +
-      worldline.distances.orbit.distanceKm +
-      worldline.distances.galaxy.distanceKm +
-      worldline.distances.cmb.distanceKm
-    : 0;
-
-  // Sum of all speeds for "traveling at" display
-  const totalSpeedKms = worldline
-    ? worldline.frames.spin.velocityKms +
-      worldline.frames.orbit.velocityKms +
-      worldline.frames.galaxy.velocityKms +
-      worldline.frames.cmb.velocityKms
-    : 0;
+  const content = getUIContent(locale ?? 'en');
+  const frames = useFrameInfo(worldline, locale);
+  const totalDistanceKm = computeTotalDistance(worldline);
+  const totalSpeedKms = computeTotalSpeed(worldline);
 
   const isPreBirth = age?.isPreBirth ?? false;
 
@@ -202,6 +150,7 @@ export function JourneyDrawer({
         onSpeedUnitChange={onSpeedUnitChange}
         drawerState={drawerState}
         onStateChange={onStateChange}
+        locale={locale}
       />
 
       {/* Content container with scroll */}
@@ -220,7 +169,7 @@ export function JourneyDrawer({
 
         {/* Breakdown - visible in docked and expanded states */}
         {(drawerState === 'docked' || drawerState === 'expanded') && !isPreBirth && (
-          <JourneyBreakdown frames={frames} speedUnit={speedUnit} />
+          <JourneyBreakdown frames={frames} speedUnit={speedUnit} locale={locale} />
         )}
 
         {/* Total distance highlight - visible in docked and expanded states */}
@@ -230,11 +179,7 @@ export function JourneyDrawer({
               {content.journey.totalDistanceTraveled}
             </div>
             <div className="text-xl font-bold text-white tabular-nums">
-              {totalDistanceKm >= 1e12
-                ? `${(totalDistanceKm / 1e12).toFixed(2)} T km`
-                : totalDistanceKm >= 1e9
-                  ? `${(totalDistanceKm / 1e9).toFixed(2)} B km`
-                  : `${(totalDistanceKm / 1e6).toFixed(2)} M km`}
+              {formatDistanceCompactUnified(totalDistanceKm, 'km')}
             </div>
             <div className="text-xs text-neutral-400 mt-1">
               {content.journey.travelingAt}{' '}
@@ -247,7 +192,7 @@ export function JourneyDrawer({
 
         {/* Conversions - only in expanded state */}
         {drawerState === 'expanded' && !isPreBirth && (
-          <JourneyConversions totalDistanceKm={totalDistanceKm} />
+          <JourneyConversions totalDistanceKm={totalDistanceKm} locale={locale} />
         )}
 
         {/* Footer actions - expanded only */}
