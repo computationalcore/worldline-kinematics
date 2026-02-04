@@ -45,3 +45,35 @@ html {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Loading screen planet orbit animations (1s Keplerian - fast, for loading) */
+@keyframes orbitOuter {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes orbitMiddle {
+  from { transform: rotate(90deg); }
+  to { transform: rotate(450deg); }
+}
+
+@keyframes orbitInner {
+  from { transform: rotate(180deg); }
+  to { transform: rotate(540deg); }
+}
+
+/* Slower orbit animations (2s Keplerian - relaxed, for info/404 pages) */
+@keyframes orbitOuterSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes orbitMiddleSlow {
+  from { transform: rotate(120deg); }
+  to { transform: rotate(480deg); }
+}
+
+@keyframes orbitInnerSlow {
+  from { transform: rotate(240deg); }
+  to { transform: rotate(600deg); }
+}

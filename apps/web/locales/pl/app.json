@@ -1,0 +1,325 @@
+{
+  "meta": {
+    "title": "Kosmiczna Podroz",
+    "description": "Twoj Ruch Przez Kosmos",
+    "keywords": "czasoprzestrzen, kosmiczna podroz, uklad sloneczny, astronomia, fizyka, wszechswiat, planety, ruch orbitalny, wizualizacja przestrzeni"
+  },
+  "header": {
+    "title": "Kosmiczna Podroz",
+    "subtitle": "Twoj Ruch Przez Kosmos"
+  },
+  "onboarding": {
+    "title": "Twoja Kosmiczna Podroz",
+    "description": "Wprowadz date urodzenia, aby odkryc, jak daleko podrozowales przez kosmos.",
+    "birthDate": "Data urodzenia",
+    "birthTime": "Godzina urodzenia",
+    "birthLocation": "Miejsce urodzenia",
+    "addTime": "Dodaj godzine urodzenia (opcjonalnie)",
+    "addLocation": "Dodaj miejsce urodzenia (opcjonalnie)",
+    "removeTime": "Usun",
+    "removeLocation": "Usun",
+    "searchPlace": "Szukaj miasta lub miejsca...",
+    "useCurrentLocation": "Uzyj mojej aktualnej lokalizacji",
+    "locationSet": "Lokalizacja ustawiona",
+    "journeyBegan": "Twoja kosmiczna podroz rozpoczela sie",
+    "skip": "Pomin, najpierw odkrywaj",
+    "skipMobile": "Pomin",
+    "beginJourney": "Rozpocznij podroz",
+    "clearData": "Wyczysc zapisane dane urodzenia",
+    "privacy": "Wszystkie obliczenia wykonywane sa lokalnie. Twoje dane nigdy nie opuszczaja przegladarki.",
+    "month": "Miesiac",
+    "day": "Dzien",
+    "year": "Rok",
+    "hour": "Godzina",
+    "minute": "Minuta",
+    "months": [
+      "Styczen",
+      "Luty",
+      "Marzec",
+      "Kwiecien",
+      "Maj",
+      "Czerwiec",
+      "Lipiec",
+      "Sierpien",
+      "Wrzesien",
+      "Pazdziernik",
+      "Listopad",
+      "Grudzien"
+    ],
+    "validation": {
+      "yearFuture": "Rok nie moze byc w przyszlosci",
+      "yearPast": "Rok musi byc 1900 lub pozniejszy",
+      "invalidDay": "Nieprawidlowy dzien dla wybranego miesiaca"
+    }
+  },
+  "journey": {
+    "button": "Twoja Kosmiczna Podroz",
+    "buttonMobile": "Twoja Podroz",
+    "tooltip": "Zobacz swoja kosmiczna podroz (J)"
+  },
+  "dateSlider": {
+    "viewModes": {
+      "live": "Teraz",
+      "birth": "Twoje urodziny",
+      "custom": "Wlasna"
+    },
+    "year": "Rok",
+    "jumpTo": "Przejdz do:",
+    "date": "Data",
+    "time": "Czas",
+    "viewingAt": "Ogladasz ten moment w czasie",
+    "localTime": "Czas lokalny. UTC:",
+    "editBirthData": "Zmien date, godzine i miejsce urodzenia",
+    "addBirthDate": "Dodaj date urodzenia",
+    "dataSaved": "Dane zapisane lokalnie. Nic nie jest wysylane na serwery."
+  },
+  "scene": {
+    "clickToExplore": "Kliknij dowolną planetę, aby ją zbadać. Przewijaj, aby przybliżać.",
+    "loading": "Ładowanie...",
+    "settings": "Ustawienia",
+    "display": "Wyświetlanie",
+    "orbitPaths": "Ścieżki orbit",
+    "orbitalTrails": "Ślady orbitalne",
+    "distanceAU": "Odległość (AU)",
+    "asteroidBelts": "Pasy asteroid",
+    "rotationAxis": "Oś obrotu",
+    "cameraControls": "Sterowanie kamerą",
+    "pinchToZoom": "Uszczypnij, aby przybliżać, przeciągnij, aby obracać",
+    "galacticCenter": "Centrum Galaktyki",
+    "cmbRestFrame": "Układ odniesienia CMB",
+    "ephemerisNote": "Efemerydy: Astronomy Engine (VSOP87)",
+    "noPlacesFound": "Nie znaleziono miejsc",
+    "presets": {
+      "schoolModel": {
+        "label": "Szkolny",
+        "description": "Skompresowane rozmiary i odległości",
+        "note": "Najlepszy do przeglądu"
+      },
+      "trueSizes": {
+        "label": "Prawdziwy Rozmiar",
+        "description": "Rzeczywiste względne rozmiary planet",
+        "note": "Logarytmiczne odległości"
+      },
+      "truePhysical": {
+        "label": "Prawdziwa Skala",
+        "description": "Geometrycznie dokładny",
+        "note": "Rzeczywiste rozmiary i odległości"
+      }
+    }
+  },
+  "planets": {
+    "Sun": "Slonce",
+    "Mercury": "Merkury",
+    "Venus": "Wenus",
+    "Earth": "Ziemia",
+    "Moon": "Ksiezyc",
+    "Mars": "Mars",
+    "Jupiter": "Jowisz",
+    "Saturn": "Saturn",
+    "Uranus": "Uran",
+    "Neptune": "Neptun"
+  },
+  "planetTypes": {
+    "Star": "Gwiazda",
+    "Rocky": "Skalisty",
+    "Gas Giant": "Gazowy olbrzym",
+    "Ice Giant": "Lodowy olbrzym",
+    "Moon": "Ksiezyc"
+  },
+  "planetInfo": {
+    "distance": "Odleglosc",
+    "lightTime": "Czas swiatla",
+    "orbitalSpeed": "Predkosc orbitalna",
+    "rotationSpeed": "Predkosc obrotu",
+    "moonPhase": "Faza Ksiezyca",
+    "rotation": "Obrót",
+    "orbit": "Orbita",
+    "spinLabel": "Rotacja {planet}",
+    "orbitLabel": "Orbita {planet}",
+    "galacticOrbit": "Orbita galaktyczna",
+    "cmbMotion": "Ruch CMB",
+    "light": "swiatla",
+    "season": "Pora roku",
+    "phase": "Faza",
+    "spin": "Obrót",
+    "dist": "Odl",
+    "mass": "Masa",
+    "size": "Rozmiar",
+    "center": "Centrum",
+    "more": "Wiecej",
+    "less": "Mniej",
+    "moon": "ksiezyc",
+    "moons": "ksiezyce",
+    "dayOrbit": "d orbity",
+    "yearOrbit": "l orbity",
+    "xEarth": "x Ziemia"
+  },
+  "seasons": {
+    "modalTitle": "Dlaczego pory roku sa przeciwne",
+    "modalSubtitle": "Nachylenie osi Ziemi o 23,5 stopnia",
+    "northern": "Polnocna",
+    "southern": "Poludniowa",
+    "Spring": "Wiosna",
+    "Summer": "Lato",
+    "Autumn": "Jesien",
+    "Winter": "Zima",
+    "explanation": {
+      "title1": "Nachylenie powoduje pory roku",
+      "description1": "Os Ziemi jest nachylona o 23,5 stopnia wzgledem jej orbity wokol Slonca. To nachylenie pozostaje stale, gdy Ziemia krazy, zawsze wskazujac na to samo miejsce w przestrzeni (w poblizu Gwiazdy Polarnej).",
+      "title2": "Bezposrednie vs. pochyle swiatlo sloneczne",
+      "description2": "Gdy polkula jest nachylona w strone Slonca, swiatlo sloneczne pada bardziej bezposrednio (skoncentrowana energia = cieplej). Gdy jest nachylona w przeciwna strone, swiatlo pada pod plytkim katem (rozproszone = chlodniej).",
+      "title3": "Zawsze przeciwne",
+      "description3": "Gdy polkula polnocna jest nachylona w strone Slonca (czerwiec), polkula poludniowa jest nachylona w przeciwna strone. Szesc miesiecy pozniej (grudzien) jest odwrotnie. Dlatego pory roku sa zawsze przeciwne."
+    },
+    "funFact": "Ciekawostka: Bez nachylenia nie byloby por roku! Dni zawsze bylyby takiej samej dlugosci wszedzie.",
+    "notAboutDistance": "To nie chodzi o odleglosc",
+    "notAboutDistanceDesc": "Powszechnym bledem jest przekonanie, ze pory roku sa spowodowane blizszym lub dalszym polozeniem Ziemi od Slonca. W rzeczywistosci Ziemia jest najblizej Slonca w styczniu (zima na polkuli polnocnej)! Roznica odleglosci okolo 3% ma minimalny wplyw w porownaniu z katem padania swiatla slonecznego.",
+    "gotIt": "Rozumiem"
+  },
+  "visualModes": {
+    "title": "Tryby wizualne",
+    "subtitle": "Zrozumienie skali kosmicznej",
+    "understandingCosmicScale": "Zrozumienie skali kosmicznej",
+    "whyVisualizationModes": "Dlaczego potrzebujemy roznych trybow wizualizacji",
+    "visualizationChallenge": "Wyzwanie wizualizacji",
+    "visualizationChallengeDesc": "Gdyby Slonce bylo <basketball>pilka do koszykowki</basketball>, Ziemia bylaby ziarenkiem piasku <highlight>26 metrow dalej</highlight>. Neptun? Prawie <highlight>kilometr</highlight>. Zaden ekran nie moze pokazac prawdziwej skali.",
+    "threeModes": "Trzy tryby",
+    "scholar": {
+      "name": "Naukowy",
+      "tag": "Edukacyjny",
+      "description": "Skalowanie logarytmiczne pokazuje wszystkie planety na ekranie. Idealne do nauki pozycji orbitalnych."
+    },
+    "trueSizes": {
+      "name": "Prawdziwe rozmiary",
+      "tag": "Porownawczy",
+      "description": "Dokladne rozmiary planet wzgledem siebie. Jowisz naprawde jest 11 razy wiekszy od Ziemi."
+    },
+    "trueScale": {
+      "name": "Prawdziwa skala",
+      "tag": "Rzeczywistosc",
+      "description": "Geometrycznie dokladne. Zarowno rozmiary, jak i odleglosci uzywaja tego samego wspolczynnika skali."
+    },
+    "truePhysical": {
+      "name": "Prawdziwa skala fizyczna",
+      "description": "Dokladne odleglosci i rozmiary takie, jakie istnieja w przestrzeni"
+    },
+    "explorer": {
+      "name": "Tryb odkrywcy",
+      "description": "Zwiekszona widocznosc ze skompresowanymi odleglosciami"
+    },
+    "speedOfLight": "Predkosc swiatla",
+    "earthLoopsSec": "Okrazenia Ziemi/s",
+    "sunToEarth": "Od Slonca do Ziemi",
+    "sunToNeptune": "Od Slonca do Neptuna",
+    "note": "Pokazanie prawdziwej skali kosmosu to wyzwanie - gdyby Ziemia byla kulka, Ksiezyc bylby 9 metrow dalej, a Slonce ponad 1,5 km!",
+    "controls": {
+      "title": "Sterowanie",
+      "items": [
+        "Kliknij dowolna planete, aby sie na niej skupic",
+        "Przewijaj lub uszczypnij, aby przyblizac",
+        "Przeciagnij, aby obracac widok",
+        "Kliknij dwukrotnie, aby zresetowac"
+      ]
+    },
+    "about": {
+      "title": "O aplikacji",
+      "builtWith": "Zbudowane z worldline-kinematics",
+      "description": "Open-source framework do wizualizacji kosmicznej",
+      "github": "GitHub",
+      "privacy": "Prywatnosc na pierwszym miejscu",
+      "privacyDescription": "Wszystkie obliczenia odbywaja sie lokalnie w Twojej przegladarce. Bez sledzenia, bez zbierania danych.",
+      "ephemerides": "Efemerydy: Astronomy Engine",
+      "ephemeridesDesc": "Teoria planetarna VSOP87, precyzja do minuty katowej"
+    },
+    "tip": "Kliknij dowolna planete lub etykiete, aby sie skupic. Przewijaj, aby przyblizac.",
+    "stats": {
+      "ratio": "Stosunek"
+    }
+  },
+  "cameraControls": {
+    "zoom": "Przyblizenie",
+    "zoomIn": "Przybliz",
+    "zoomOut": "Oddal",
+    "reset": "Resetuj widok",
+    "tiltUp": "Przechyl w gore",
+    "tiltDown": "Przechyl w dol",
+    "rotateLeft": "Obroc w lewo",
+    "rotateRight": "Obroc w prawo",
+    "toggleSettings": "Przelacz ustawienia",
+    "learnAboutModes": "Dowiedz sie o trybach wizualnych",
+    "showDistancesTitle": "Pokaz rzeczywiste odleglosci w AU i czas podrozy swiatla",
+    "showBeltsTitle": "Pokaz glowny pas asteroid i pas Kuipera",
+    "showAxisTitle": "Pokaz os obrotu wybranej planety",
+    "showControlsTitle": "Pokaz sterowanie przyblizeniem i obrotem kamery",
+    "collapse": "Zwin",
+    "expand": "Rozwin"
+  },
+  "sceneOptions": {
+    "visualMode": "Tryb wizualny",
+    "showOrbits": "Pokaz orbity",
+    "showDistances": "Pokaz odleglosci",
+    "showAxes": "Pokaz osie",
+    "showBelts": "Pokaz pasy"
+  },
+  "units": {
+    "au": "AU",
+    "km": "km",
+    "kms": "km/s",
+    "kmh": "km/h",
+    "mph": "mph",
+    "lightMinutes": "minut swietlnych",
+    "lightSeconds": "sekund swietlnych"
+  },
+  "journeyDrawer": {
+    "title": "Twoja Kosmiczna Podroz",
+    "frames": {
+      "spin": {
+        "label": "1. Obrót (Wirowanie)",
+        "description": "Odleglosc z obrotu Ziemi"
+      },
+      "orbit": {
+        "label": "2. Okrazenie Slonca",
+        "description": "Ziemia pedzi wokol Slonca"
+      },
+      "galaxy": {
+        "label": "3. Podroz Ukladu Slonecznego",
+        "description": "Slonce porusza sie wokol Drogi Mlecznej"
+      },
+      "cmb": {
+        "label": "4. Podroz galaktyczna",
+        "description": "Galaktyka porusza sie wzgledem CMB"
+      }
+    },
+    "journeyNotStarted": "Podroz jeszcze sie nie rozpoczela",
+    "journeyBeginsAtBirth": "Twoja kosmiczna podroz zaczyna sie od urodzin",
+    "totalDistanceTraveled": "Calkowita przebyta odleglosc",
+    "travelingAt": "Podrózujesz z predkoscia:",
+    "changeBirthDate": "Zmien date urodzenia",
+    "clickToChangeUnits": "Kliknij, aby zmienic jednostki",
+    "clickToChangeDistanceUnits": "Kliknij, aby zmienic jednostki odleglosci",
+    "clickToChangeSpeedUnits": "Kliknij, aby zmienic jednostki predkosci",
+    "viewCalculationDetails": "Zobacz szczegoly obliczen",
+    "northernHemisphere": "Polkula polnocna",
+    "southernHemisphere": "Polkula poludniowa"
+  },
+  "common": {
+    "close": "Zamknij",
+    "loading": "Ladowanie...",
+    "error": "Blad",
+    "at": "o",
+    "tip": "Wskazowka"
+  },
+  "mobileSettings": {
+    "title": "Ustawienia",
+    "birthDate": "Data Urodzenia",
+    "birthTime": "Godzina",
+    "birthLocation": "Miejsce",
+    "focusOn": "Skup sie na",
+    "visualMode": "Tryb Wizualny",
+    "display": "Wyswietlanie",
+    "language": "Jezyk",
+    "fullscreen": "Pelny Ekran",
+    "exitFullscreen": "Wyjdz z Pelnego Ekranu",
+    "done": "Gotowe"
+  }
+}

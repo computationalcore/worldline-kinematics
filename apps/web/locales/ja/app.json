@@ -1,0 +1,325 @@
+{
+  "meta": {
+    "title": "宇宙の旅",
+    "description": "宇宙を駆け抜けるあなたの軌跡",
+    "keywords": "時空, 宇宙の旅, 太陽系, 天文学, 物理学, 宇宙, 惑星, 軌道運動, 宇宙可視化"
+  },
+  "header": {
+    "title": "宇宙の旅",
+    "subtitle": "宇宙を駆け抜けるあなたの軌跡"
+  },
+  "onboarding": {
+    "title": "あなたの宇宙の旅",
+    "description": "生年月日を入力して、宇宙をどれだけ旅してきたか発見しましょう。",
+    "birthDate": "生年月日",
+    "birthTime": "出生時刻",
+    "birthLocation": "出生地",
+    "addTime": "出生時刻を追加（任意）",
+    "addLocation": "出生地を追加（任意）",
+    "removeTime": "削除",
+    "removeLocation": "削除",
+    "searchPlace": "都市や場所を検索...",
+    "useCurrentLocation": "現在地を使用",
+    "locationSet": "位置情報が設定されました",
+    "journeyBegan": "あなたの宇宙の旅が始まった日",
+    "skip": "スキップして先に探索",
+    "skipMobile": "スキップ",
+    "beginJourney": "旅を始める",
+    "clearData": "保存された誕生データを消去",
+    "privacy": "すべての計算はローカルで実行されます。データがブラウザから外に送信されることはありません。",
+    "month": "月",
+    "day": "日",
+    "year": "年",
+    "hour": "時",
+    "minute": "分",
+    "months": [
+      "1月",
+      "2月",
+      "3月",
+      "4月",
+      "5月",
+      "6月",
+      "7月",
+      "8月",
+      "9月",
+      "10月",
+      "11月",
+      "12月"
+    ],
+    "validation": {
+      "yearFuture": "未来の年は入力できません",
+      "yearPast": "1900年以降を入力してください",
+      "invalidDay": "選択された月には無効な日付です"
+    }
+  },
+  "journey": {
+    "button": "あなたの宇宙の旅",
+    "buttonMobile": "あなたの旅",
+    "tooltip": "宇宙の旅を見る (J)"
+  },
+  "dateSlider": {
+    "viewModes": {
+      "live": "現在",
+      "birth": "誕生日",
+      "custom": "カスタム"
+    },
+    "year": "年",
+    "jumpTo": "移動:",
+    "date": "日付",
+    "time": "時刻",
+    "viewingAt": "この瞬間を表示中",
+    "localTime": "現地時間。UTC:",
+    "editBirthData": "生年月日、時刻、場所を変更",
+    "addBirthDate": "生年月日を追加",
+    "dataSaved": "データはローカルに保存されます。サーバーには送信されません。"
+  },
+  "scene": {
+    "clickToExplore": "惑星をクリックして探索。スクロールでズーム。",
+    "loading": "読み込み中...",
+    "settings": "設定",
+    "display": "表示",
+    "orbitPaths": "軌道経路",
+    "orbitalTrails": "軌道の軌跡",
+    "distanceAU": "距離 (AU)",
+    "asteroidBelts": "小惑星帯",
+    "rotationAxis": "自転軸",
+    "cameraControls": "カメラ操作",
+    "pinchToZoom": "ピンチでズーム、ドラッグで回転",
+    "galacticCenter": "銀河中心",
+    "cmbRestFrame": "CMB静止系",
+    "ephemerisNote": "天体暦: Astronomy Engine (VSOP87)",
+    "noPlacesFound": "場所が見つかりません",
+    "presets": {
+      "schoolModel": {
+        "label": "スカラー",
+        "description": "サイズと距離を圧縮",
+        "note": "全体把握に最適"
+      },
+      "trueSizes": {
+        "label": "実サイズ",
+        "description": "惑星の相対サイズ",
+        "note": "対数距離"
+      },
+      "truePhysical": {
+        "label": "実スケール",
+        "description": "幾何学的に正確",
+        "note": "実際のサイズと距離"
+      }
+    }
+  },
+  "planets": {
+    "Sun": "太陽",
+    "Mercury": "水星",
+    "Venus": "金星",
+    "Earth": "地球",
+    "Moon": "月",
+    "Mars": "火星",
+    "Jupiter": "木星",
+    "Saturn": "土星",
+    "Uranus": "天王星",
+    "Neptune": "海王星"
+  },
+  "planetTypes": {
+    "Star": "恒星",
+    "Rocky": "岩石惑星",
+    "Gas Giant": "巨大ガス惑星",
+    "Ice Giant": "巨大氷惑星",
+    "Moon": "衛星"
+  },
+  "planetInfo": {
+    "distance": "距離",
+    "lightTime": "光到達時間",
+    "orbitalSpeed": "公転速度",
+    "rotationSpeed": "自転速度",
+    "moonPhase": "月齢",
+    "rotation": "自転",
+    "orbit": "公転",
+    "spinLabel": "{planet}の自転",
+    "orbitLabel": "{planet}の公転",
+    "galacticOrbit": "銀河公転",
+    "cmbMotion": "CMB運動",
+    "light": "光",
+    "season": "季節",
+    "phase": "位相",
+    "spin": "自転",
+    "dist": "距離",
+    "mass": "質量",
+    "size": "サイズ",
+    "center": "中心",
+    "more": "詳細",
+    "less": "閉じる",
+    "moon": "衛星",
+    "moons": "衛星",
+    "dayOrbit": "日公転",
+    "yearOrbit": "年公転",
+    "xEarth": "倍地球"
+  },
+  "seasons": {
+    "modalTitle": "なぜ季節は南北で逆なのか",
+    "modalSubtitle": "地球の23.5度の地軸傾斜",
+    "northern": "北半球",
+    "southern": "南半球",
+    "Spring": "春",
+    "Summer": "夏",
+    "Autumn": "秋",
+    "Winter": "冬",
+    "explanation": {
+      "title1": "傾きが季節を生む",
+      "description1": "地球の軸は太陽周回軌道に対して23.5度傾いています。この傾きは地球が公転する間も一定で、常に宇宙の同じ方向（北極星付近）を向いています。",
+      "title2": "直射光と斜めの光",
+      "description2": "半球が太陽に向かって傾くと、日光がより直接当たります（エネルギーが集中＝暖かい）。傾きが離れると、日光は浅い角度で当たります（分散＝涼しい）。",
+      "title3": "常に逆",
+      "description3": "北半球が太陽に向かって傾く時（6月）、南半球は離れる方向に傾きます。6ヶ月後（12月）には逆転します。これが季節が常に逆になる理由です。"
+    },
+    "funFact": "豆知識: 地軸の傾きがなければ、季節は存在しません！ どこでも日の長さは常に同じになります。",
+    "notAboutDistance": "距離は関係ない",
+    "notAboutDistanceDesc": "季節は地球と太陽の距離で決まるという誤解がよくあります。実際には、地球は1月（北半球の冬）に太陽に最も近づきます！ 約3%の距離変化は、日光の角度に比べてほとんど影響がありません。",
+    "gotIt": "了解"
+  },
+  "visualModes": {
+    "title": "ビジュアルモード",
+    "subtitle": "宇宙スケールを理解する",
+    "understandingCosmicScale": "宇宙スケールを理解する",
+    "whyVisualizationModes": "なぜ異なる可視化モードが必要か",
+    "visualizationChallenge": "可視化の課題",
+    "visualizationChallengeDesc": "もし太陽が<basketball>バスケットボール</basketball>だったら、地球は<highlight>26メートル先</highlight>の砂粒になります。海王星は？ほぼ<highlight>1キロメートル先</highlight>です。真のスケールを画面に表示することは不可能です。",
+    "threeModes": "3つのモード",
+    "scholar": {
+      "name": "スカラー",
+      "tag": "教育用",
+      "description": "対数スケールですべての惑星を画面に表示。軌道位置の学習に最適。"
+    },
+    "trueSizes": {
+      "name": "実サイズ",
+      "tag": "比較用",
+      "description": "惑星の正確な相対サイズ。木星は本当に地球の11倍です。"
+    },
+    "trueScale": {
+      "name": "実スケール",
+      "tag": "現実",
+      "description": "幾何学的に完璧。サイズと距離の両方が同じ縮尺を使用。"
+    },
+    "truePhysical": {
+      "name": "真の物理スケール",
+      "description": "宇宙に存在する正確な距離とサイズ"
+    },
+    "explorer": {
+      "name": "エクスプローラーモード",
+      "description": "距離を圧縮して視認性を向上"
+    },
+    "speedOfLight": "光速",
+    "earthLoopsSec": "地球周回/秒",
+    "sunToEarth": "太陽から地球",
+    "sunToNeptune": "太陽から海王星",
+    "note": "宇宙の真のスケールを表示するのは困難です - もし地球がビー玉だったら、月は約9メートル先、太陽は1.6キロメートル以上先になります！",
+    "controls": {
+      "title": "操作方法",
+      "items": [
+        "惑星をクリックしてフォーカス",
+        "スクロールまたはピンチでズーム",
+        "ドラッグで視点を回転",
+        "ダブルクリックでリセット"
+      ]
+    },
+    "about": {
+      "title": "このアプリについて",
+      "builtWith": "worldline-kinematicsで構築",
+      "description": "オープンソースの宇宙可視化フレームワーク",
+      "github": "GitHub",
+      "privacy": "プライバシー優先",
+      "privacyDescription": "すべての計算はブラウザ内でローカルに実行されます。追跡やデータ収集は行いません。",
+      "ephemerides": "天体暦: Astronomy Engine",
+      "ephemeridesDesc": "VSOP87惑星理論、分角精度"
+    },
+    "tip": "惑星またはラベルをクリックしてフォーカス。スクロールでズーム。",
+    "stats": {
+      "ratio": "比率"
+    }
+  },
+  "cameraControls": {
+    "zoom": "ズーム",
+    "zoomIn": "ズームイン",
+    "zoomOut": "ズームアウト",
+    "reset": "視点をリセット",
+    "tiltUp": "上に傾ける",
+    "tiltDown": "下に傾ける",
+    "rotateLeft": "左に回転",
+    "rotateRight": "右に回転",
+    "toggleSettings": "設定を切り替え",
+    "learnAboutModes": "ビジュアルモードについて学ぶ",
+    "showDistancesTitle": "AUと光到達時間で実距離を表示",
+    "showBeltsTitle": "メインの小惑星帯とカイパーベルトを表示",
+    "showAxisTitle": "選択した惑星の自転軸を表示",
+    "showControlsTitle": "カメラのズームと回転コントロールを表示",
+    "collapse": "折りたたむ",
+    "expand": "展開"
+  },
+  "sceneOptions": {
+    "visualMode": "ビジュアルモード",
+    "showOrbits": "軌道を表示",
+    "showDistances": "距離を表示",
+    "showAxes": "軸を表示",
+    "showBelts": "小惑星帯を表示"
+  },
+  "units": {
+    "au": "AU",
+    "km": "km",
+    "kms": "km/秒",
+    "kmh": "km/時",
+    "mph": "マイル/時",
+    "lightMinutes": "光分",
+    "lightSeconds": "光秒"
+  },
+  "journeyDrawer": {
+    "title": "あなたの宇宙の旅",
+    "frames": {
+      "spin": {
+        "label": "1. 自転した距離",
+        "description": "地球の自転による移動距離"
+      },
+      "orbit": {
+        "label": "2. 太陽周回",
+        "description": "太陽の周りを回る地球"
+      },
+      "galaxy": {
+        "label": "3. 太陽系の移動",
+        "description": "天の川銀河を周回する太陽"
+      },
+      "cmb": {
+        "label": "4. 銀河の移動",
+        "description": "CMBに対する銀河の運動"
+      }
+    },
+    "journeyNotStarted": "旅はまだ始まっていません",
+    "journeyBeginsAtBirth": "あなたの宇宙の旅は誕生から始まります",
+    "totalDistanceTraveled": "総移動距離",
+    "travelingAt": "移動速度:",
+    "changeBirthDate": "生年月日を変更",
+    "clickToChangeUnits": "クリックして単位を変更",
+    "clickToChangeDistanceUnits": "クリックして距離の単位を変更",
+    "clickToChangeSpeedUnits": "クリックして速度の単位を変更",
+    "viewCalculationDetails": "計算の詳細を見る",
+    "northernHemisphere": "北半球",
+    "southernHemisphere": "南半球"
+  },
+  "common": {
+    "close": "閉じる",
+    "loading": "読み込み中...",
+    "error": "エラー",
+    "at": "時点",
+    "tip": "ヒント"
+  },
+  "mobileSettings": {
+    "title": "設定",
+    "birthDate": "生年月日",
+    "birthTime": "時刻",
+    "birthLocation": "場所",
+    "focusOn": "フォーカス",
+    "visualMode": "表示モード",
+    "display": "表示",
+    "language": "言語",
+    "fullscreen": "フルスクリーン",
+    "exitFullscreen": "フルスクリーン解除",
+    "done": "完了"
+  }
+}

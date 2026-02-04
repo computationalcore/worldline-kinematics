@@ -36,8 +36,13 @@ function loadState(): JourneyDrawerState {
         speedUnit: parsed.speedUnit ?? DEFAULT_STATE.speedUnit,
       };
     }
-  } catch {
-    // Ignore parse errors
+  } catch (_error) {
+    // Clear corrupted state silently
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // localStorage removal also failed, ignore
+    }
   }
 
   return DEFAULT_STATE;
@@ -52,7 +57,7 @@ function saveState(state: JourneyDrawerState): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
-    // Ignore storage errors (quota exceeded, etc.)
+    // Storage failed (quota exceeded, etc.) — ignore silently
   }
 }
 

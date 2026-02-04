@@ -1,0 +1,325 @@
+{
+  "meta": {
+    "title": "Cosmic Journey",
+    "description": "Your Motion Through the Cosmos",
+    "keywords": "spacetime, cosmic journey, solar system, astronomy, physics, universe, planets, orbital motion, space visualization"
+  },
+  "header": {
+    "title": "Cosmic Journey",
+    "subtitle": "Your Motion Through the Cosmos"
+  },
+  "onboarding": {
+    "title": "Your Cosmic Journey",
+    "description": "Enter your birth date to discover how far you've traveled through the cosmos.",
+    "birthDate": "Birth Date",
+    "birthTime": "Birth Time",
+    "birthLocation": "Birth Location",
+    "addTime": "Add birth time (optional)",
+    "addLocation": "Add birth location (optional)",
+    "removeTime": "Remove",
+    "removeLocation": "Remove",
+    "searchPlace": "Search city or place...",
+    "useCurrentLocation": "Use my current location",
+    "locationSet": "Location set",
+    "journeyBegan": "Your cosmic journey began on",
+    "skip": "Skip, explore first",
+    "skipMobile": "Skip",
+    "beginJourney": "Begin Journey",
+    "clearData": "Clear saved birth data",
+    "privacy": "All calculations run locally. Your data never leaves your browser.",
+    "month": "Month",
+    "day": "Day",
+    "year": "Year",
+    "hour": "Hour",
+    "minute": "Minute",
+    "months": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
+    "validation": {
+      "yearFuture": "Year cannot be in the future",
+      "yearPast": "Year must be 1900 or later",
+      "invalidDay": "Invalid day for selected month"
+    }
+  },
+  "journey": {
+    "button": "Your Cosmic Journey",
+    "buttonMobile": "Your Journey",
+    "tooltip": "View your cosmic journey (J)"
+  },
+  "dateSlider": {
+    "viewModes": {
+      "live": "Now",
+      "birth": "Your Birth",
+      "custom": "Custom"
+    },
+    "year": "Year",
+    "jumpTo": "Jump to:",
+    "date": "Date",
+    "time": "Time",
+    "viewingAt": "Viewing at this moment in time",
+    "localTime": "Local time. UTC:",
+    "editBirthData": "Change birth date, time & location",
+    "addBirthDate": "Add your birth date",
+    "dataSaved": "Data saved locally. Nothing sent to servers."
+  },
+  "scene": {
+    "clickToExplore": "Click any planet to explore. Scroll to zoom.",
+    "loading": "Loading...",
+    "settings": "Settings",
+    "display": "Display",
+    "orbitPaths": "Orbit Paths",
+    "orbitalTrails": "Orbital Trails",
+    "distanceAU": "Distance (AU)",
+    "asteroidBelts": "Asteroid Belts",
+    "rotationAxis": "Rotation Axis",
+    "cameraControls": "Camera Controls",
+    "pinchToZoom": "Pinch to zoom, drag to rotate",
+    "galacticCenter": "Galactic Center",
+    "cmbRestFrame": "CMB Rest Frame",
+    "ephemerisNote": "Ephemerides: Astronomy Engine (VSOP87)",
+    "noPlacesFound": "No places found",
+    "presets": {
+      "schoolModel": {
+        "label": "Scholar",
+        "description": "Compressed sizes and distances",
+        "note": "Best for overview"
+      },
+      "trueSizes": {
+        "label": "True Size",
+        "description": "Real planet relative sizes",
+        "note": "Logarithmic distances"
+      },
+      "truePhysical": {
+        "label": "True Scale",
+        "description": "Geometrically accurate",
+        "note": "Real sizes and distances"
+      }
+    }
+  },
+  "planets": {
+    "Sun": "Sun",
+    "Mercury": "Mercury",
+    "Venus": "Venus",
+    "Earth": "Earth",
+    "Moon": "Moon",
+    "Mars": "Mars",
+    "Jupiter": "Jupiter",
+    "Saturn": "Saturn",
+    "Uranus": "Uranus",
+    "Neptune": "Neptune"
+  },
+  "planetTypes": {
+    "Star": "Star",
+    "Rocky": "Rocky",
+    "Gas Giant": "Gas Giant",
+    "Ice Giant": "Ice Giant",
+    "Moon": "Moon"
+  },
+  "planetInfo": {
+    "distance": "Distance",
+    "lightTime": "Light time",
+    "orbitalSpeed": "Orbital speed",
+    "rotationSpeed": "Rotation speed",
+    "moonPhase": "Moon phase",
+    "rotation": "Rotation",
+    "orbit": "Orbit",
+    "spinLabel": "{planet} Rotation",
+    "orbitLabel": "{planet} Orbit",
+    "galacticOrbit": "Galactic Orbit",
+    "cmbMotion": "CMB Motion",
+    "light": "light",
+    "season": "Season",
+    "phase": "Phase",
+    "spin": "Spin",
+    "dist": "Dist",
+    "mass": "Mass",
+    "size": "Size",
+    "center": "Center",
+    "more": "More",
+    "less": "Less",
+    "moon": "moon",
+    "moons": "moons",
+    "dayOrbit": "d orbit",
+    "yearOrbit": "y orbit",
+    "xEarth": "x Earth"
+  },
+  "seasons": {
+    "modalTitle": "Why Seasons Are Opposite",
+    "modalSubtitle": "Earth's 23.5 degree axial tilt",
+    "northern": "Northern",
+    "southern": "Southern",
+    "Spring": "Spring",
+    "Summer": "Summer",
+    "Autumn": "Autumn",
+    "Winter": "Winter",
+    "explanation": {
+      "title1": "The Tilt Causes Seasons",
+      "description1": "Earth's axis is tilted 23.5 degrees relative to its orbit around the Sun. This tilt stays constant as Earth orbits, always pointing toward the same spot in space (near Polaris).",
+      "title2": "Direct vs. Angled Sunlight",
+      "description2": "When a hemisphere tilts toward the Sun, sunlight hits more directly (concentrated energy = warmer). When tilted away, sunlight hits at a shallow angle (spread out = cooler).",
+      "title3": "Always Opposite",
+      "description3": "When the Northern Hemisphere tilts toward the Sun (June), the Southern Hemisphere tilts away. Six months later (December), it's reversed. This is why seasons are always opposite."
+    },
+    "funFact": "Fun Fact: Without the tilt, there would be no seasons! Days would always be the same length everywhere.",
+    "notAboutDistance": "Not About Distance",
+    "notAboutDistanceDesc": "A common misconception is that seasons are caused by Earth being closer or farther from the Sun. In fact, Earth is closest to the Sun in January (Northern winter)! The ~3% distance variation has minimal effect compared to the angle of sunlight.",
+    "gotIt": "Got it"
+  },
+  "visualModes": {
+    "title": "Visual Modes",
+    "subtitle": "Understanding cosmic scale",
+    "understandingCosmicScale": "Understanding Cosmic Scale",
+    "whyVisualizationModes": "Why we need different visualization modes",
+    "visualizationChallenge": "The Visualization Challenge",
+    "visualizationChallengeDesc": "If the Sun were a <basketball>basketball</basketball>, Earth would be a grain of sand <highlight>26 meters away</highlight>. Neptune? Almost <highlight>a kilometer</highlight>. No screen can show true scale.",
+    "threeModes": "Three Modes",
+    "scholar": {
+      "name": "Scholar",
+      "tag": "Educational",
+      "description": "Logarithmic scaling shows all planets on screen. Perfect for learning orbital positions."
+    },
+    "trueSizes": {
+      "name": "True Size",
+      "tag": "Comparative",
+      "description": "Accurate planet sizes relative to each other. Jupiter really is 11x Earth."
+    },
+    "trueScale": {
+      "name": "True Scale",
+      "tag": "Reality",
+      "description": "Geometrically perfect. Both sizes and distances use the same scale factor."
+    },
+    "truePhysical": {
+      "name": "True Physical Scale",
+      "description": "Accurate distances and sizes as they exist in space"
+    },
+    "explorer": {
+      "name": "Explorer Mode",
+      "description": "Enhanced visibility with compressed distances"
+    },
+    "speedOfLight": "Speed of Light",
+    "earthLoopsSec": "Earth loops/sec",
+    "sunToEarth": "Sun to Earth",
+    "sunToNeptune": "Sun to Neptune",
+    "note": "Showing the true scale of space is a challenge - if Earth were a marble, the Moon would be 30 feet away, and the Sun would be over a mile away!",
+    "controls": {
+      "title": "Controls",
+      "items": [
+        "Click any planet to focus",
+        "Scroll or pinch to zoom",
+        "Drag to rotate view",
+        "Double-click to reset"
+      ]
+    },
+    "about": {
+      "title": "About",
+      "builtWith": "Built with worldline-kinematics",
+      "description": "Open-source cosmic visualization framework",
+      "github": "GitHub",
+      "privacy": "Privacy First",
+      "privacyDescription": "All calculations happen locally in your browser. No tracking, no data collection.",
+      "ephemerides": "Ephemerides: Astronomy Engine",
+      "ephemeridesDesc": "VSOP87 planetary theory, arcminute precision"
+    },
+    "tip": "Click any planet or label to focus. Scroll to zoom.",
+    "stats": {
+      "ratio": "Ratio"
+    }
+  },
+  "cameraControls": {
+    "zoom": "Zoom",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "reset": "Reset view",
+    "tiltUp": "Tilt up",
+    "tiltDown": "Tilt down",
+    "rotateLeft": "Rotate left",
+    "rotateRight": "Rotate right",
+    "toggleSettings": "Toggle settings",
+    "learnAboutModes": "Learn about visual modes",
+    "showDistancesTitle": "Show real distances in AU and light travel time",
+    "showBeltsTitle": "Show main asteroid belt and Kuiper belt",
+    "showAxisTitle": "Show rotation axis on selected planet",
+    "showControlsTitle": "Show camera zoom and rotation controls",
+    "collapse": "Collapse",
+    "expand": "Expand"
+  },
+  "sceneOptions": {
+    "visualMode": "Visual Mode",
+    "showOrbits": "Show Orbits",
+    "showDistances": "Show Distances",
+    "showAxes": "Show Axes",
+    "showBelts": "Show Belts"
+  },
+  "units": {
+    "au": "AU",
+    "km": "km",
+    "kms": "km/s",
+    "kmh": "km/h",
+    "mph": "mph",
+    "lightMinutes": "light-minutes",
+    "lightSeconds": "light-seconds"
+  },
+  "journeyDrawer": {
+    "title": "Your Cosmic Journey",
+    "frames": {
+      "spin": {
+        "label": "1. Rotated (Spin)",
+        "description": "Distance from Earth spinning"
+      },
+      "orbit": {
+        "label": "2. Orbited Sun",
+        "description": "Earth racing around the Sun"
+      },
+      "galaxy": {
+        "label": "3. Solar System Travel",
+        "description": "Sun moving around the Milky Way"
+      },
+      "cmb": {
+        "label": "4. Galactic Travel",
+        "description": "Galaxy moving relative to CMB"
+      }
+    },
+    "journeyNotStarted": "Journey Not Yet Started",
+    "journeyBeginsAtBirth": "Your cosmic journey begins at birth",
+    "totalDistanceTraveled": "Total Distance Traveled",
+    "travelingAt": "Traveling at:",
+    "changeBirthDate": "Change birth date",
+    "clickToChangeUnits": "Click to change units",
+    "clickToChangeDistanceUnits": "Click to change distance units",
+    "clickToChangeSpeedUnits": "Click to change speed units",
+    "viewCalculationDetails": "View calculation details",
+    "northernHemisphere": "Northern Hemisphere",
+    "southernHemisphere": "Southern Hemisphere"
+  },
+  "common": {
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "Error",
+    "at": "at",
+    "tip": "Tip"
+  },
+  "mobileSettings": {
+    "title": "Settings",
+    "birthDate": "Birth Date",
+    "birthTime": "Time",
+    "birthLocation": "Location",
+    "focusOn": "Focus On",
+    "visualMode": "Visual Mode",
+    "display": "Display",
+    "language": "Language",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit Fullscreen",
+    "done": "Done"
+  }
+}

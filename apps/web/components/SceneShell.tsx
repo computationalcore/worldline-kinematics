@@ -108,11 +108,12 @@ export function OverlayTopRight({ children, className = '', style }: OverlaySlot
 /**
  * Bottom-left overlay slot.
  * Use for info labels, fullscreen button.
+ * Uses bottom-24 on mobile to clear iOS Safari navigation bar.
  */
 export function OverlayBottomLeft({ children, className = '', style }: OverlaySlotProps) {
   return (
     <div
-      className={`pointer-events-auto absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 ${className}`}
+      className={`pointer-events-auto absolute bottom-24 sm:bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 ${className}`}
       style={style}
     >
       {children}

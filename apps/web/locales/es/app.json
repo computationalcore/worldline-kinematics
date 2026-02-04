@@ -1,0 +1,325 @@
+{
+  "meta": {
+    "title": "Viaje Cósmico",
+    "description": "Tu Movimiento a Través del Cosmos",
+    "keywords": "espacio-tiempo, viaje cósmico, sistema solar, astronomía, física, universo, planetas, movimiento orbital, visualización espacial"
+  },
+  "header": {
+    "title": "Viaje Cósmico",
+    "subtitle": "Tu Movimiento a Través del Cosmos"
+  },
+  "onboarding": {
+    "title": "Tu Viaje Cósmico",
+    "description": "Ingresa tu fecha de nacimiento para descubrir cuánto has viajado a través del cosmos.",
+    "birthDate": "Fecha de Nacimiento",
+    "birthTime": "Hora de Nacimiento",
+    "birthLocation": "Lugar de Nacimiento",
+    "addTime": "Agregar hora de nacimiento (opcional)",
+    "addLocation": "Agregar lugar de nacimiento (opcional)",
+    "removeTime": "Eliminar",
+    "removeLocation": "Eliminar",
+    "searchPlace": "Buscar ciudad o lugar...",
+    "useCurrentLocation": "Usar mi ubicación actual",
+    "locationSet": "Ubicación establecida",
+    "journeyBegan": "Tu viaje cósmico comenzó el",
+    "skip": "Omitir, explorar primero",
+    "skipMobile": "Omitir",
+    "beginJourney": "Comenzar Viaje",
+    "clearData": "Borrar datos de nacimiento guardados",
+    "privacy": "Todos los cálculos se ejecutan localmente. Tus datos nunca salen de tu navegador.",
+    "month": "Mes",
+    "day": "Día",
+    "year": "Año",
+    "hour": "Hora",
+    "minute": "Minuto",
+    "months": [
+      "Enero",
+      "Febrero",
+      "Marzo",
+      "Abril",
+      "Mayo",
+      "Junio",
+      "Julio",
+      "Agosto",
+      "Septiembre",
+      "Octubre",
+      "Noviembre",
+      "Diciembre"
+    ],
+    "validation": {
+      "yearFuture": "El año no puede estar en el futuro",
+      "yearPast": "El año debe ser 1900 o posterior",
+      "invalidDay": "Día inválido para el mes seleccionado"
+    }
+  },
+  "journey": {
+    "button": "Tu Viaje Cósmico",
+    "buttonMobile": "Tu Viaje",
+    "tooltip": "Ver tu viaje cósmico (J)"
+  },
+  "dateSlider": {
+    "viewModes": {
+      "live": "Ahora",
+      "birth": "Tu Nacimiento",
+      "custom": "Personalizado"
+    },
+    "year": "Ano",
+    "jumpTo": "Ir a:",
+    "date": "Fecha",
+    "time": "Hora",
+    "viewingAt": "Viendo en este momento en el tiempo",
+    "localTime": "Hora local. UTC:",
+    "editBirthData": "Cambiar fecha, hora y lugar de nacimiento",
+    "addBirthDate": "Agregar tu fecha de nacimiento",
+    "dataSaved": "Datos guardados localmente. Nada enviado a servidores."
+  },
+  "scene": {
+    "clickToExplore": "Haz clic en cualquier planeta para explorar. Desplaza para hacer zoom.",
+    "loading": "Cargando...",
+    "settings": "Configuracion",
+    "display": "Visualización",
+    "orbitPaths": "Trayectorias Órbitales",
+    "orbitalTrails": "Estelas Orbitales",
+    "distanceAU": "Distancia (UA)",
+    "asteroidBelts": "Cinturones de Asteroides",
+    "rotationAxis": "Eje de Rotación",
+    "cameraControls": "Controles de Camara",
+    "pinchToZoom": "Pellizca para zoom, arrastra para rotar",
+    "galacticCenter": "Centro Galactico",
+    "cmbRestFrame": "Marco de Reposo del CMB",
+    "ephemerisNote": "Efemerides: Astronomy Engine (VSOP87)",
+    "noPlacesFound": "No se encontraron lugares",
+    "presets": {
+      "schoolModel": {
+        "label": "Escolar",
+        "description": "Tamaños y distancias comprimidos",
+        "note": "Ideal para visión general"
+      },
+      "trueSizes": {
+        "label": "Tamaño Real",
+        "description": "Tamaños relativos reales de planetas",
+        "note": "Distancias logarítmicas"
+      },
+      "truePhysical": {
+        "label": "Escala Real",
+        "description": "Geométricamente preciso",
+        "note": "Tamaños y distancias reales"
+      }
+    }
+  },
+  "planets": {
+    "Sun": "Sol",
+    "Mercury": "Mercurio",
+    "Venus": "Venus",
+    "Earth": "Tierra",
+    "Moon": "Luna",
+    "Mars": "Marte",
+    "Jupiter": "Jupiter",
+    "Saturn": "Saturno",
+    "Uranus": "Urano",
+    "Neptune": "Neptuno"
+  },
+  "planetTypes": {
+    "Star": "Estrella",
+    "Rocky": "Rocoso",
+    "Gas Giant": "Gigante Gaseoso",
+    "Ice Giant": "Gigante de Hielo",
+    "Moon": "Luna"
+  },
+  "planetInfo": {
+    "distance": "Distancia",
+    "lightTime": "Tiempo luz",
+    "orbitalSpeed": "Velocidad orbital",
+    "rotationSpeed": "Velocidad de rotación",
+    "moonPhase": "Fase lunar",
+    "rotation": "Rotación",
+    "orbit": "Órbita",
+    "spinLabel": "Rotación de {planet}",
+    "orbitLabel": "Órbita de {planet}",
+    "galacticOrbit": "Órbita Galactica",
+    "cmbMotion": "Movimiento CMB",
+    "light": "luz",
+    "season": "Estación",
+    "phase": "Fase",
+    "spin": "Giro",
+    "dist": "Dist",
+    "mass": "Masa",
+    "size": "Tamaño",
+    "center": "Centro",
+    "more": "Mas",
+    "less": "Menos",
+    "moon": "luna",
+    "moons": "lunas",
+    "dayOrbit": "d órbita",
+    "yearOrbit": "a órbita",
+    "xEarth": "x Tierra"
+  },
+  "seasons": {
+    "modalTitle": "Por Que las Estaciónes Son Opuestas",
+    "modalSubtitle": "La inclinación axial de 23.5 grados de la Tierra",
+    "northern": "Norte",
+    "southern": "Sur",
+    "Spring": "Primavera",
+    "Summer": "Verano",
+    "Autumn": "Otono",
+    "Winter": "Invierno",
+    "explanation": {
+      "title1": "La Inclinación Causa las Estaciónes",
+      "description1": "El eje de la Tierra esta inclinado 23.5 grados respecto a su órbita alrededor del Sol. Esta inclinación permanece constante mientras la Tierra órbita, siempre apuntando hacia el mismo lugar en el espacio (cerca de Polaris).",
+      "title2": "Luz Solar Directa vs. Angular",
+      "description2": "Cuando un hemisferio se inclina hacia el Sol, la luz solar incide másdirectamente (energia concentrada = máscalido). Cuando se inclina alejándose, la luz solar incide en un ángulo oblicuo (dispersa = másfrio).",
+      "title3": "Siempre Opuestas",
+      "description3": "Cuando el Hemisferio Norte se inclina hacia el Sol (junio), el Hemisferio Sur se inclina alejándose. Seis meses después (diciembre), se invierte. Por eso las estaciones siempre son opuestas."
+    },
+    "funFact": "Dato Curioso: Sin la inclinación, no habria estaciones! Los dias siempre tendrian la misma duracion en todas partes.",
+    "notAboutDistance": "No Es Cuestion de Distancia",
+    "notAboutDistanceDesc": "Un error común es creer que las estaciones son causadas por la cercanía o lejanía de la Tierra al Sol. De hecho, la Tierra esta máscerca del Sol en enero (invierno del norte)! La variación de distancia de ~3% tiene un efecto mínimo comparado con el ángulo de la luz solar.",
+    "gotIt": "Entendido"
+  },
+  "visualModes": {
+    "title": "Modos Visuales",
+    "subtitle": "Comprendiendo la escala cosmica",
+    "understandingCosmicScale": "Comprendiendo la Escala Cosmica",
+    "whyVisualizationModes": "Por que necesitamos diferentes modos de visualizacion",
+    "visualizationChallenge": "El Desafio de la Visualización",
+    "visualizationChallengeDesc": "Si el Sol fuera una <basketball>pelota de basquetbol</basketball>, la Tierra sería un grano de arena a <highlight>26 metros de distancia</highlight>. Neptuno? Casi <highlight>un kilómetro</highlight>. Ninguna pantalla puede mostrar la escala real.",
+    "threeModes": "Tres Modos",
+    "scholar": {
+      "name": "Academico",
+      "tag": "Educativo",
+      "description": "La escala logaritmica muestra todos los planetas en pantalla. Perfecto para aprender posiciones órbitales."
+    },
+    "trueSizes": {
+      "name": "Tamaño Real",
+      "tag": "Comparativo",
+      "description": "Tamaños de planetas precisos entre si. Jupiter realmente es 11 veces la Tierra."
+    },
+    "trueScale": {
+      "name": "Escala Real",
+      "tag": "Realidad",
+      "description": "Geometricamente perfecto. Tanto tamanos como distancias usan el mismo factor de escala."
+    },
+    "truePhysical": {
+      "name": "Escala Fisica Real",
+      "description": "Distancias y tamanos precisos como existen en el espacio"
+    },
+    "explorer": {
+      "name": "Modo Explorador",
+      "description": "Visibilidad mejorada con distancias comprimidas"
+    },
+    "speedOfLight": "Velocidad de la Luz",
+    "earthLoopsSec": "Vueltas a la Tierra/seg",
+    "sunToEarth": "Del Sol a la Tierra",
+    "sunToNeptune": "Del Sol a Neptuno",
+    "note": "Mostrar la escala real del espacio es un desafio - si la Tierra fuera una canica, la Luna estaria a 10 metros de distancia, y el Sol estaria a másde 1.5 kilómetros!",
+    "controls": {
+      "title": "Controles",
+      "items": [
+        "Haz clic en cualquier planeta para enfocarlo",
+        "Desplaza o pellizca para hacer zoom",
+        "Arrastra para rotar la vista",
+        "Doble clic para reiniciar"
+      ]
+    },
+    "about": {
+      "title": "Acerca de",
+      "builtWith": "Construido con worldline-kinematics",
+      "description": "Marco de visualizacion espaciotemporal de codigo abierto",
+      "github": "GitHub",
+      "privacy": "Privacidad Primero",
+      "privacyDescription": "Todos los calculos ocurren localmente en tu navegador. Sin rastreo, sin recopilacion de datos.",
+      "ephemerides": "Efemerides: Astronomy Engine",
+      "ephemeridesDesc": "Teoria planetaria VSOP87, precision de arcominutos"
+    },
+    "tip": "Haz clic en cualquier planeta o etiqueta para enfocarlo. Desplaza para hacer zoom.",
+    "stats": {
+      "ratio": "Proporcion"
+    }
+  },
+  "cameraControls": {
+    "zoom": "Zoom",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "reset": "Reiniciar vista",
+    "tiltUp": "Inclinar arriba",
+    "tiltDown": "Inclinar abajo",
+    "rotateLeft": "Rotar izquierda",
+    "rotateRight": "Rotar derecha",
+    "toggleSettings": "Alternar configuracion",
+    "learnAboutModes": "Conocer los modos visuales",
+    "showDistancesTitle": "Mostrar distancias reales en UA y tiempo de viaje de la luz",
+    "showBeltsTitle": "Mostrar cinturon principal de asteroides y cinturon de Kuiper",
+    "showAxisTitle": "Mostrar eje de rotación en el planeta seleccionado",
+    "showControlsTitle": "Mostrar controles de zoom y rotación de camara",
+    "collapse": "Contraer",
+    "expand": "Expandir"
+  },
+  "sceneOptions": {
+    "visualMode": "Modo Visual",
+    "showOrbits": "Mostrar Órbitas",
+    "showDistances": "Mostrar Distancias",
+    "showAxes": "Mostrar Ejes",
+    "showBelts": "Mostrar Cinturones"
+  },
+  "units": {
+    "au": "UA",
+    "km": "km",
+    "kms": "km/s",
+    "kmh": "km/h",
+    "mph": "mph",
+    "lightMinutes": "minutos-luz",
+    "lightSeconds": "segundos-luz"
+  },
+  "journeyDrawer": {
+    "title": "Tu Viaje Cósmico",
+    "frames": {
+      "spin": {
+        "label": "1. Rotación (Giro)",
+        "description": "Distancia por la rotación de la Tierra"
+      },
+      "orbit": {
+        "label": "2. Orbito el Sol",
+        "description": "La Tierra corriendo alrededor del Sol"
+      },
+      "galaxy": {
+        "label": "3. Viaje del Sistema Solar",
+        "description": "El Sol moviendose alrededor de la Via Lactea"
+      },
+      "cmb": {
+        "label": "4. Viaje Galactico",
+        "description": "La galaxia moviendose respecto al CMB"
+      }
+    },
+    "journeyNotStarted": "Viaje Aun No Iniciado",
+    "journeyBeginsAtBirth": "Tu viaje cosmico comienza al nacer",
+    "totalDistanceTraveled": "Distancia Total Recorrida",
+    "travelingAt": "Viajando a:",
+    "changeBirthDate": "Cambiar fecha de nacimiento",
+    "clickToChangeUnits": "Clic para cambiar unidades",
+    "clickToChangeDistanceUnits": "Clic para cambiar unidades de distancia",
+    "clickToChangeSpeedUnits": "Clic para cambiar unidades de velocidad",
+    "viewCalculationDetails": "Ver detalles del calculo",
+    "northernHemisphere": "Hemisferio Norte",
+    "southernHemisphere": "Hemisferio Sur"
+  },
+  "common": {
+    "close": "Cerrar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "at": "a las",
+    "tip": "Consejo"
+  },
+  "mobileSettings": {
+    "title": "Ajustes",
+    "birthDate": "Fecha de Nacimiento",
+    "birthTime": "Hora",
+    "birthLocation": "Ubicacion",
+    "focusOn": "Enfocar en",
+    "visualMode": "Modo Visual",
+    "display": "Visualizacion",
+    "language": "Idioma",
+    "fullscreen": "Pantalla Completa",
+    "exitFullscreen": "Salir de Pantalla Completa",
+    "done": "Listo"
+  }
+}

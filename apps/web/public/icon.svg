@@ -1,0 +1,68 @@
+<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!--
+    Static app icon with 3D perspective (60° tilt).
+    Planet positions show Keplerian physics: inner planets have traveled
+    further in the same time period (T² ∝ r³).
+
+    Starting from aligned at 0°, after time t:
+    - Outer (slowest): traveled ~45° → now at 315°
+    - Middle: traveled ~100° → now at 60°
+    - Inner (fastest): traveled ~210° → now at 210°
+  -->
+  <defs>
+    <radialGradient id="iconGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="iconOrbit1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#8b5cf6" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.2" />
+    </linearGradient>
+    <linearGradient id="iconOrbit2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.7" />
+      <stop offset="50%" stop-color="#ef4444" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.2" />
+    </linearGradient>
+    <linearGradient id="iconOrbit3" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.6" />
+      <stop offset="50%" stop-color="#06b6d4" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Apply 3D tilt transform to everything -->
+  <g transform="translate(100,100)">
+    <g transform="scale(1, 0.5)">
+      <g transform="translate(-100,-100)">
+
+        <!-- Background glow -->
+        <circle cx="100" cy="100" r="80" fill="url(#iconGlow)" />
+
+        <!-- Orbit paths (circles that appear as ellipses due to 3D tilt) -->
+        <circle cx="100" cy="100" r="75" stroke="url(#iconOrbit1)" stroke-width="2" stroke-dasharray="4 2" fill="none" />
+        <circle cx="100" cy="100" r="52" stroke="url(#iconOrbit2)" stroke-width="2" stroke-dasharray="3 3" fill="none" />
+        <circle cx="100" cy="100" r="30" stroke="url(#iconOrbit3)" stroke-width="1.5" stroke-dasharray="2 4" fill="none" />
+
+        <!-- Planet positions based on Keplerian motion snapshot -->
+
+        <!-- Outer planet (blue) at 315° - slowest, traveled least -->
+        <!-- x = 100 + 75*cos(315°) = 153, y = 100 + 75*sin(315°) = 47 -->
+        <circle cx="153" cy="47" r="8" fill="#3b82f6" />
+
+        <!-- Middle planet (orange) at 60° -->
+        <!-- x = 100 + 52*cos(60°) = 126, y = 100 + 52*sin(60°) = 145 -->
+        <circle cx="126" cy="145" r="7" fill="#f59e0b" />
+
+        <!-- Inner planet (green) at 210° - fastest, traveled most -->
+        <!-- x = 100 + 30*cos(210°) = 74, y = 100 + 30*sin(210°) = 85 -->
+        <circle cx="74" cy="85" r="5" fill="#10b981" />
+
+        <!-- Sun at center -->
+        <circle cx="100" cy="100" r="16" fill="#fbbf24" />
+        <circle cx="100" cy="100" r="10" fill="#fef3c7" />
+
+      </g>
+    </g>
+  </g>
+</svg>

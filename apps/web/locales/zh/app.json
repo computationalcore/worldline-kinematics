@@ -1,0 +1,320 @@
+{
+  "meta": {
+    "title": "宇宙之旅",
+    "description": "你在宇宙中的运动轨迹",
+    "keywords": "时空, 宇宙之旅, 太阳系, 天文学, 物理学, 宇宙, 行星, 轨道运动, 太空可视化"
+  },
+  "header": {
+    "title": "宇宙之旅",
+    "subtitle": "你在宇宙中的运动轨迹"
+  },
+  "onboarding": {
+    "title": "你的宇宙之旅",
+    "description": "输入你的出生日期，探索你在宇宙中穿越了多远。",
+    "birthDate": "出生日期",
+    "birthTime": "出生时间",
+    "birthLocation": "出生地点",
+    "addTime": "添加出生时间（可选）",
+    "addLocation": "添加出生地点（可选）",
+    "removeTime": "移除",
+    "removeLocation": "移除",
+    "searchPlace": "搜索城市或地点...",
+    "useCurrentLocation": "使用当前位置",
+    "locationSet": "位置已设置",
+    "journeyBegan": "你的宇宙之旅开始于",
+    "skip": "跳过，先探索",
+    "skipMobile": "跳过",
+    "beginJourney": "开始旅程",
+    "clearData": "清除已保存的出生数据",
+    "privacy": "所有计算都在本地进行。你的数据绝不会离开浏览器。",
+    "month": "月",
+    "day": "日",
+    "year": "年",
+    "hour": "时",
+    "minute": "分",
+    "months": [
+      "一月",
+      "二月",
+      "三月",
+      "四月",
+      "五月",
+      "六月",
+      "七月",
+      "八月",
+      "九月",
+      "十月",
+      "十一月",
+      "十二月"
+    ],
+    "validation": {
+      "yearFuture": "年份不能是未来的",
+      "yearPast": "年份必须是1900年或之后",
+      "invalidDay": "所选月份的日期无效"
+    }
+  },
+  "journey": {
+    "button": "你的宇宙之旅",
+    "buttonMobile": "你的旅程",
+    "tooltip": "查看你的宇宙之旅 (J)"
+  },
+  "dateSlider": {
+    "viewModes": {
+      "live": "现在",
+      "birth": "你的出生",
+      "custom": "自定义"
+    },
+    "year": "年",
+    "jumpTo": "跳转至：",
+    "date": "日期",
+    "time": "时间",
+    "viewingAt": "正在查看这一时刻",
+    "localTime": "本地时间。UTC：",
+    "editBirthData": "修改出生日期、时间和地点",
+    "addBirthDate": "添加你的出生日期",
+    "dataSaved": "数据保存在本地。不会发送到服务器。"
+  },
+  "scene": {
+    "clickToExplore": "点击任意行星进行探索。滚动可缩放。",
+    "loading": "加载中...",
+    "settings": "设置",
+    "display": "显示",
+    "orbitPaths": "轨道路径",
+    "orbitalTrails": "轨道轨迹",
+    "distanceAU": "距离（天文单位）",
+    "asteroidBelts": "小行星带",
+    "rotationAxis": "自转轴",
+    "cameraControls": "相机控制",
+    "pinchToZoom": "捏合缩放，拖动旋转",
+    "galacticCenter": "银河系中心",
+    "cmbRestFrame": "宇宙微波背景静止参考系",
+    "ephemerisNote": "星历表：Astronomy Engine (VSOP87)",
+    "noPlacesFound": "未找到地点",
+    "presets": {
+      "schoolModel": {
+        "label": "学术模式",
+        "description": "压缩尺寸和距离",
+        "note": "最适合概览"
+      },
+      "trueSizes": {
+        "label": "真实尺寸",
+        "description": "行星相对大小",
+        "note": "对数距离"
+      },
+      "truePhysical": {
+        "label": "真实比例",
+        "description": "几何精确",
+        "note": "真实尺寸和距离"
+      }
+    }
+  },
+  "planets": {
+    "Sun": "太阳",
+    "Mercury": "水星",
+    "Venus": "金星",
+    "Earth": "地球",
+    "Moon": "月球",
+    "Mars": "火星",
+    "Jupiter": "木星",
+    "Saturn": "土星",
+    "Uranus": "天王星",
+    "Neptune": "海王星"
+  },
+  "planetTypes": {
+    "Star": "恒星",
+    "Rocky": "岩石行星",
+    "Gas Giant": "气态巨行星",
+    "Ice Giant": "冰巨行星",
+    "Moon": "卫星"
+  },
+  "planetInfo": {
+    "distance": "距离",
+    "lightTime": "光行时间",
+    "orbitalSpeed": "轨道速度",
+    "rotationSpeed": "自转速度",
+    "moonPhase": "月相",
+    "rotation": "自转",
+    "orbit": "公转",
+    "spinLabel": "{planet}自转",
+    "orbitLabel": "{planet}公转",
+    "galacticOrbit": "银河轨道",
+    "cmbMotion": "宇宙微波背景运动",
+    "light": "光",
+    "season": "季节",
+    "phase": "相位",
+    "spin": "自转",
+    "dist": "距离",
+    "mass": "质量",
+    "size": "大小",
+    "center": "居中",
+    "more": "更多",
+    "less": "收起",
+    "moon": "颗卫星",
+    "moons": "颗卫星",
+    "dayOrbit": "天轨道周期",
+    "yearOrbit": "年轨道周期",
+    "xEarth": "倍地球"
+  },
+  "seasons": {
+    "modalTitle": "为什么南北半球季节相反",
+    "modalSubtitle": "地球23.5度的轴倾斜",
+    "northern": "北半球",
+    "southern": "南半球",
+    "Spring": "春季",
+    "Summer": "夏季",
+    "Autumn": "秋季",
+    "Winter": "冬季",
+    "explanation": {
+      "title1": "倾斜导致季节变化",
+      "description1": "地球的自转轴相对于其绕太阳公转的轨道倾斜23.5度。在地球公转过程中，这个倾斜保持不变，始终指向太空中的同一点（靠近北极星）。",
+      "title2": "直射与斜射阳光",
+      "description2": "当某半球朝向太阳倾斜时，阳光更直接照射（能量集中=更温暖）。当远离太阳倾斜时，阳光以较小的角度照射（能量分散=更凉爽）。",
+      "title3": "永远相反",
+      "description3": "当北半球朝向太阳倾斜时（六月），南半球远离太阳。六个月后（十二月），情况相反。这就是为什么季节总是相反的。"
+    },
+    "funFact": "趣味知识：如果没有这个倾斜角，就不会有季节！各地的白天长度将始终相同。",
+    "notAboutDistance": "与距离无关",
+    "notAboutDistanceDesc": "一个常见的误解是季节是由地球距离太阳的远近造成的。事实上，地球在一月份（北半球冬季）距离太阳最近！与阳光照射角度相比，约3%的距离变化影响微乎其微。",
+    "gotIt": "明白了"
+  },
+  "visualModes": {
+    "title": "可视化模式",
+    "subtitle": "理解宇宙尺度",
+    "understandingCosmicScale": "理解宇宙尺度",
+    "whyVisualizationModes": "为什么我们需要不同的可视化模式",
+    "visualizationChallenge": "可视化挑战",
+    "visualizationChallengeDesc": "如果太阳是一个<basketball>篮球</basketball>，地球将是<highlight>26米外</highlight>的一粒沙子。海王星呢？差不多<highlight>一公里</highlight>远。没有任何屏幕能展示真实比例。",
+    "threeModes": "三种模式",
+    "scholar": {
+      "name": "学术模式",
+      "tag": "教育",
+      "description": "对数缩放可在屏幕上显示所有行星。非常适合学习轨道位置。"
+    },
+    "trueSizes": {
+      "name": "真实大小",
+      "tag": "比较",
+      "description": "行星之间的大小比例准确。木星确实是地球的11倍。"
+    },
+    "trueScale": {
+      "name": "真实比例",
+      "tag": "现实",
+      "description": "几何上完美。大小和距离使用相同的比例因子。"
+    },
+    "truePhysical": {
+      "name": "真实物理比例",
+      "description": "太空中实际存在的精确距离和大小"
+    },
+    "explorer": {
+      "name": "探索者模式",
+      "description": "压缩距离以提高可见性"
+    },
+    "speedOfLight": "光速",
+    "earthLoopsSec": "地球圈/秒",
+    "sunToEarth": "太阳到地球",
+    "sunToNeptune": "太阳到海王星",
+    "note": "展示太空的真实比例是一个挑战——如果地球是一颗弹珠，月球将在10米外，而太阳将在1.6公里之外！",
+    "controls": {
+      "title": "控制",
+      "items": ["点击任意行星聚焦", "滚动或捏合缩放", "拖动旋转视角", "双击重置"]
+    },
+    "about": {
+      "title": "关于",
+      "builtWith": "基于 worldline-kinematics 构建",
+      "description": "开源宇宙可视化框架",
+      "github": "GitHub",
+      "privacy": "隐私优先",
+      "privacyDescription": "所有计算都在浏览器本地进行。无跟踪，无数据收集。",
+      "ephemerides": "星历表：Astronomy Engine",
+      "ephemeridesDesc": "VSOP87行星理论，角分精度"
+    },
+    "tip": "点击任意行星或标签聚焦。滚动缩放。",
+    "stats": {
+      "ratio": "比例"
+    }
+  },
+  "cameraControls": {
+    "zoom": "缩放",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "reset": "重置视图",
+    "tiltUp": "向上倾斜",
+    "tiltDown": "向下倾斜",
+    "rotateLeft": "向左旋转",
+    "rotateRight": "向右旋转",
+    "toggleSettings": "切换设置",
+    "learnAboutModes": "了解可视化模式",
+    "showDistancesTitle": "以天文单位和光行时间显示真实距离",
+    "showBeltsTitle": "显示主小行星带和柯伊伯带",
+    "showAxisTitle": "在选定的行星上显示自转轴",
+    "showControlsTitle": "显示相机缩放和旋转控制",
+    "collapse": "收起",
+    "expand": "展开"
+  },
+  "sceneOptions": {
+    "visualMode": "可视化模式",
+    "showOrbits": "显示轨道",
+    "showDistances": "显示距离",
+    "showAxes": "显示坐标轴",
+    "showBelts": "显示小行星带"
+  },
+  "units": {
+    "au": "天文单位",
+    "km": "公里",
+    "kms": "公里/秒",
+    "kmh": "公里/小时",
+    "mph": "英里/小时",
+    "lightMinutes": "光分",
+    "lightSeconds": "光秒"
+  },
+  "journeyDrawer": {
+    "title": "你的宇宙之旅",
+    "frames": {
+      "spin": {
+        "label": "1. 自转（旋转）",
+        "description": "地球自转带来的距离"
+      },
+      "orbit": {
+        "label": "2. 绕太阳公转",
+        "description": "地球绕太阳高速运行"
+      },
+      "galaxy": {
+        "label": "3. 太阳系运动",
+        "description": "太阳绕银河系中心运动"
+      },
+      "cmb": {
+        "label": "4. 银河系运动",
+        "description": "银河系相对于宇宙微波背景的运动"
+      }
+    },
+    "journeyNotStarted": "旅程尚未开始",
+    "journeyBeginsAtBirth": "你的宇宙之旅从出生开始",
+    "totalDistanceTraveled": "总行程距离",
+    "travelingAt": "当前速度：",
+    "changeBirthDate": "修改出生日期",
+    "clickToChangeUnits": "点击更改单位",
+    "clickToChangeDistanceUnits": "点击更改距离单位",
+    "clickToChangeSpeedUnits": "点击更改速度单位",
+    "viewCalculationDetails": "查看计算详情",
+    "northernHemisphere": "北半球",
+    "southernHemisphere": "南半球"
+  },
+  "common": {
+    "close": "关闭",
+    "loading": "加载中...",
+    "error": "错误",
+    "at": "于",
+    "tip": "提示"
+  },
+  "mobileSettings": {
+    "title": "设置",
+    "birthDate": "出生日期",
+    "birthTime": "时间",
+    "birthLocation": "地点",
+    "focusOn": "聚焦于",
+    "visualMode": "视觉模式",
+    "display": "显示",
+    "language": "语言",
+    "fullscreen": "全屏",
+    "exitFullscreen": "退出全屏",
+    "done": "完成"
+  }
+}

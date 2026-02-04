@@ -1,0 +1,325 @@
+{
+  "meta": {
+    "title": "Kosmische Reise",
+    "description": "Deine Bewegung durch den Kosmos",
+    "keywords": "Raumzeit, kosmische Reise, Sonnensystem, Astronomie, Physik, Universum, Planeten, Orbitalbewegung, Weltraumvisualisierung"
+  },
+  "header": {
+    "title": "Kosmische Reise",
+    "subtitle": "Deine Bewegung durch den Kosmos"
+  },
+  "onboarding": {
+    "title": "Deine Kosmische Reise",
+    "description": "Gib dein Geburtsdatum ein, um zu entdecken, wie weit du durch den Kosmos gereist bist.",
+    "birthDate": "Geburtsdatum",
+    "birthTime": "Geburtszeit",
+    "birthLocation": "Geburtsort",
+    "addTime": "Geburtszeit hinzufuegen (optional)",
+    "addLocation": "Geburtsort hinzufuegen (optional)",
+    "removeTime": "Entfernen",
+    "removeLocation": "Entfernen",
+    "searchPlace": "Stadt oder Ort suchen...",
+    "useCurrentLocation": "Meinen aktuellen Standort verwenden",
+    "locationSet": "Standort festgelegt",
+    "journeyBegan": "Deine kosmische Reise begann am",
+    "skip": "Ueberspringen, zuerst erkunden",
+    "skipMobile": "Ueberspringen",
+    "beginJourney": "Reise beginnen",
+    "clearData": "Gespeicherte Geburtsdaten loeschen",
+    "privacy": "Alle Berechnungen laufen lokal. Deine Daten verlassen niemals deinen Browser.",
+    "month": "Monat",
+    "day": "Tag",
+    "year": "Jahr",
+    "hour": "Stunde",
+    "minute": "Minute",
+    "months": [
+      "Januar",
+      "Februar",
+      "Maerz",
+      "April",
+      "Mai",
+      "Juni",
+      "Juli",
+      "August",
+      "September",
+      "Oktober",
+      "November",
+      "Dezember"
+    ],
+    "validation": {
+      "yearFuture": "Das Jahr kann nicht in der Zukunft liegen",
+      "yearPast": "Das Jahr muss 1900 oder spaeter sein",
+      "invalidDay": "Ungueltiger Tag fuer den ausgewaehlten Monat"
+    }
+  },
+  "journey": {
+    "button": "Deine Kosmische Reise",
+    "buttonMobile": "Deine Reise",
+    "tooltip": "Deine kosmische Reise anzeigen (J)"
+  },
+  "dateSlider": {
+    "viewModes": {
+      "live": "Jetzt",
+      "birth": "Deine Geburt",
+      "custom": "Benutzerdefiniert"
+    },
+    "year": "Jahr",
+    "jumpTo": "Springe zu:",
+    "date": "Datum",
+    "time": "Zeit",
+    "viewingAt": "Ansicht zu diesem Zeitpunkt",
+    "localTime": "Ortszeit. UTC:",
+    "editBirthData": "Geburtsdatum, -zeit und -ort aendern",
+    "addBirthDate": "Dein Geburtsdatum hinzufuegen",
+    "dataSaved": "Daten lokal gespeichert. Nichts an Server gesendet."
+  },
+  "scene": {
+    "clickToExplore": "Klicke auf einen Planeten zum Erkunden. Scrolle zum Zoomen.",
+    "loading": "Laden...",
+    "settings": "Einstellungen",
+    "display": "Anzeige",
+    "orbitPaths": "Umlaufbahnen",
+    "orbitalTrails": "Orbitale Spuren",
+    "distanceAU": "Entfernung (AE)",
+    "asteroidBelts": "Asteroidengürtel",
+    "rotationAxis": "Rotationsachse",
+    "cameraControls": "Kamerasteuerung",
+    "pinchToZoom": "Zum Zoomen zusammenziehen, zum Drehen ziehen",
+    "galacticCenter": "Galaktisches Zentrum",
+    "cmbRestFrame": "CMB-Ruhesystem",
+    "ephemerisNote": "Ephemeriden: Astronomy Engine (VSOP87)",
+    "noPlacesFound": "Keine Orte gefunden",
+    "presets": {
+      "schoolModel": {
+        "label": "Schulmodell",
+        "description": "Komprimierte Größen und Entfernungen",
+        "note": "Ideal für Übersicht"
+      },
+      "trueSizes": {
+        "label": "Echte Größe",
+        "description": "Echte relative Planetengrößen",
+        "note": "Logarithmische Entfernungen"
+      },
+      "truePhysical": {
+        "label": "Echter Maßstab",
+        "description": "Geometrisch genau",
+        "note": "Echte Größen und Entfernungen"
+      }
+    }
+  },
+  "planets": {
+    "Sun": "Sonne",
+    "Mercury": "Merkur",
+    "Venus": "Venus",
+    "Earth": "Erde",
+    "Moon": "Mond",
+    "Mars": "Mars",
+    "Jupiter": "Jupiter",
+    "Saturn": "Saturn",
+    "Uranus": "Uranus",
+    "Neptune": "Neptun"
+  },
+  "planetTypes": {
+    "Star": "Stern",
+    "Rocky": "Gesteinsplanet",
+    "Gas Giant": "Gasriese",
+    "Ice Giant": "Eisriese",
+    "Moon": "Mond"
+  },
+  "planetInfo": {
+    "distance": "Entfernung",
+    "lightTime": "Lichtlaufzeit",
+    "orbitalSpeed": "Umlaufgeschwindigkeit",
+    "rotationSpeed": "Rotationsgeschwindigkeit",
+    "moonPhase": "Mondphase",
+    "rotation": "Rotation",
+    "orbit": "Umlaufbahn",
+    "spinLabel": "Rotation von {planet}",
+    "orbitLabel": "Umlaufbahn von {planet}",
+    "galacticOrbit": "Galaktische Umlaufbahn",
+    "cmbMotion": "CMB-Bewegung",
+    "light": "Licht",
+    "season": "Jahreszeit",
+    "phase": "Phase",
+    "spin": "Drehung",
+    "dist": "Entf.",
+    "mass": "Masse",
+    "size": "Groesse",
+    "center": "Zentrum",
+    "more": "Mehr",
+    "less": "Weniger",
+    "moon": "Mond",
+    "moons": "Monde",
+    "dayOrbit": "d Umlauf",
+    "yearOrbit": "J Umlauf",
+    "xEarth": "x Erde"
+  },
+  "seasons": {
+    "modalTitle": "Warum Jahreszeiten gegensaetzlich sind",
+    "modalSubtitle": "Die Erdachsenneigung von 23,5 Grad",
+    "northern": "Noerdlich",
+    "southern": "Suedlich",
+    "Spring": "Fruehling",
+    "Summer": "Sommer",
+    "Autumn": "Herbst",
+    "Winter": "Winter",
+    "explanation": {
+      "title1": "Die Neigung verursacht Jahreszeiten",
+      "description1": "Die Erdachse ist um 23,5 Grad relativ zu ihrer Umlaufbahn um die Sonne geneigt. Diese Neigung bleibt konstant, waehrend die Erde ihre Bahn zieht, und zeigt immer auf denselben Punkt im Weltraum (nahe Polaris).",
+      "title2": "Direktes vs. schraeg einfallendes Sonnenlicht",
+      "description2": "Wenn eine Hemisphaere zur Sonne geneigt ist, trifft das Sonnenlicht direkter auf (konzentrierte Energie = waermer). Bei Abneigung trifft das Sonnenlicht in flachem Winkel auf (verteilt = kuehler).",
+      "title3": "Immer entgegengesetzt",
+      "description3": "Wenn die noerdliche Hemisphaere zur Sonne geneigt ist (Juni), ist die suedliche Hemisphaere abgewandt. Sechs Monate spaeter (Dezember) ist es umgekehrt. Deshalb sind die Jahreszeiten immer entgegengesetzt."
+    },
+    "funFact": "Wusstest du? Ohne die Neigung gaebe es keine Jahreszeiten! Die Tage waeren ueberall immer gleich lang.",
+    "notAboutDistance": "Nicht wegen der Entfernung",
+    "notAboutDistanceDesc": "Ein haeufiger Irrglaube ist, dass Jahreszeiten dadurch entstehen, dass die Erde naeher oder weiter von der Sonne entfernt ist. Tatsaechlich ist die Erde im Januar (noerdlicher Winter) der Sonne am naechsten! Die etwa 3% Entfernungsvariation hat minimalen Einfluss im Vergleich zum Einstrahlungswinkel.",
+    "gotIt": "Verstanden"
+  },
+  "visualModes": {
+    "title": "Visuelle Modi",
+    "subtitle": "Kosmische Massstabe verstehen",
+    "understandingCosmicScale": "Kosmische Massstabe verstehen",
+    "whyVisualizationModes": "Warum wir verschiedene Visualisierungsmodi brauchen",
+    "visualizationChallenge": "Die Visualisierungs-Herausforderung",
+    "visualizationChallengeDesc": "Waere die Sonne ein <basketball>Basketball</basketball>, waere die Erde ein Sandkorn <highlight>26 Meter entfernt</highlight>. Neptun? Fast <highlight>einen Kilometer</highlight>. Kein Bildschirm kann den wahren Massstab zeigen.",
+    "threeModes": "Drei Modi",
+    "scholar": {
+      "name": "Gelehrter",
+      "tag": "Lehrreich",
+      "description": "Logarithmische Skalierung zeigt alle Planeten auf dem Bildschirm. Perfekt zum Lernen der Orbitalpositionen."
+    },
+    "trueSizes": {
+      "name": "Echte Groesse",
+      "tag": "Vergleichend",
+      "description": "Genaue Planetengroessen im Verhaeltnis zueinander. Jupiter ist wirklich 11-mal so gross wie die Erde."
+    },
+    "trueScale": {
+      "name": "Echter Massstab",
+      "tag": "Realitaet",
+      "description": "Geometrisch perfekt. Sowohl Groessen als auch Entfernungen verwenden denselben Skalierungsfaktor."
+    },
+    "truePhysical": {
+      "name": "Echter physikalischer Massstab",
+      "description": "Genaue Entfernungen und Groessen wie sie im Weltraum existieren"
+    },
+    "explorer": {
+      "name": "Entdecker-Modus",
+      "description": "Verbesserte Sichtbarkeit mit komprimierten Entfernungen"
+    },
+    "speedOfLight": "Lichtgeschwindigkeit",
+    "earthLoopsSec": "Erdumrundungen/Sek",
+    "sunToEarth": "Sonne zur Erde",
+    "sunToNeptune": "Sonne zum Neptun",
+    "note": "Den wahren Massstab des Weltraums zu zeigen ist eine Herausforderung - waere die Erde eine Murmel, waere der Mond 9 Meter entfernt, und die Sonne ueber 1,6 Kilometer!",
+    "controls": {
+      "title": "Steuerung",
+      "items": [
+        "Klicke auf einen Planeten zum Fokussieren",
+        "Scrolle oder ziehe zusammen zum Zoomen",
+        "Ziehe zum Drehen der Ansicht",
+        "Doppelklicke zum Zuruecksetzen"
+      ]
+    },
+    "about": {
+      "title": "Ueber",
+      "builtWith": "Erstellt mit worldline-kinematics",
+      "description": "Open-Source Kosmische Visualisierungs-Framework",
+      "github": "GitHub",
+      "privacy": "Datenschutz zuerst",
+      "privacyDescription": "Alle Berechnungen erfolgen lokal in deinem Browser. Kein Tracking, keine Datenerfassung.",
+      "ephemerides": "Ephemeriden: Astronomy Engine",
+      "ephemeridesDesc": "VSOP87 Planetentheorie, Bogenminuten-Praezision"
+    },
+    "tip": "Klicke auf einen Planeten oder ein Label zum Fokussieren. Scrolle zum Zoomen.",
+    "stats": {
+      "ratio": "Verhaltnis"
+    }
+  },
+  "cameraControls": {
+    "zoom": "Zoom",
+    "zoomIn": "Hineinzoomen",
+    "zoomOut": "Herauszoomen",
+    "reset": "Ansicht zuruecksetzen",
+    "tiltUp": "Nach oben neigen",
+    "tiltDown": "Nach unten neigen",
+    "rotateLeft": "Nach links drehen",
+    "rotateRight": "Nach rechts drehen",
+    "toggleSettings": "Einstellungen umschalten",
+    "learnAboutModes": "Ueber visuelle Modi erfahren",
+    "showDistancesTitle": "Echte Entfernungen in AE und Lichtlaufzeit anzeigen",
+    "showBeltsTitle": "Hauptasteroidenguertel und Kuiperguertel anzeigen",
+    "showAxisTitle": "Rotationsachse des ausgewaehlten Planeten anzeigen",
+    "showControlsTitle": "Kamera-Zoom- und Drehsteuerung anzeigen",
+    "collapse": "Einklappen",
+    "expand": "Ausklappen"
+  },
+  "sceneOptions": {
+    "visualMode": "Visueller Modus",
+    "showOrbits": "Umlaufbahnen anzeigen",
+    "showDistances": "Entfernungen anzeigen",
+    "showAxes": "Achsen anzeigen",
+    "showBelts": "Guertel anzeigen"
+  },
+  "units": {
+    "au": "AE",
+    "km": "km",
+    "kms": "km/s",
+    "kmh": "km/h",
+    "mph": "mph",
+    "lightMinutes": "Lichtminuten",
+    "lightSeconds": "Lichtsekunden"
+  },
+  "journeyDrawer": {
+    "title": "Deine Kosmische Reise",
+    "frames": {
+      "spin": {
+        "label": "1. Rotiert (Drehung)",
+        "description": "Zurueckgelegte Strecke durch Erdrotation"
+      },
+      "orbit": {
+        "label": "2. Sonne umkreist",
+        "description": "Die Erde rast um die Sonne"
+      },
+      "galaxy": {
+        "label": "3. Sonnensystem-Reise",
+        "description": "Die Sonne bewegt sich um die Milchstrasse"
+      },
+      "cmb": {
+        "label": "4. Galaktische Reise",
+        "description": "Die Galaxie bewegt sich relativ zum CMB"
+      }
+    },
+    "journeyNotStarted": "Reise noch nicht begonnen",
+    "journeyBeginsAtBirth": "Deine kosmische Reise beginnt bei der Geburt",
+    "totalDistanceTraveled": "Zurueckgelegte Gesamtstrecke",
+    "travelingAt": "Unterwegs mit:",
+    "changeBirthDate": "Geburtsdatum aendern",
+    "clickToChangeUnits": "Klicken zum Aendern der Einheiten",
+    "clickToChangeDistanceUnits": "Klicken zum Aendern der Entfernungseinheiten",
+    "clickToChangeSpeedUnits": "Klicken zum Aendern der Geschwindigkeitseinheiten",
+    "viewCalculationDetails": "Berechnungsdetails anzeigen",
+    "northernHemisphere": "Noerdliche Hemisphaere",
+    "southernHemisphere": "Suedliche Hemisphaere"
+  },
+  "common": {
+    "close": "Schliessen",
+    "loading": "Laden...",
+    "error": "Fehler",
+    "at": "um",
+    "tip": "Tipp"
+  },
+  "mobileSettings": {
+    "title": "Einstellungen",
+    "birthDate": "Geburtsdatum",
+    "birthTime": "Uhrzeit",
+    "birthLocation": "Ort",
+    "focusOn": "Fokussieren auf",
+    "visualMode": "Visueller Modus",
+    "display": "Anzeige",
+    "language": "Sprache",
+    "fullscreen": "Vollbild",
+    "exitFullscreen": "Vollbild beenden",
+    "done": "Fertig"
+  }
+}

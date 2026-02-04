@@ -13,7 +13,16 @@
 import { Canvas, useLoader, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, Line, Html } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import { Suspense, useMemo, useState, useRef, useCallback, useEffect } from 'react';
+import {
+  Suspense,
+  useMemo,
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  createContext,
+  useContext,
+} from 'react';
 import * as THREE from 'three';
 import {
   Earth,
@@ -22,8 +31,15 @@ import {
   Sun as FidelitySun,
   SaturnRings as FidelitySaturnRings,
   Planet as CinematicPlanet,
+  computeBodyQuaternion,
 } from '@worldline-kinematics/scene';
 import type { ReferenceFrame } from '@worldline-kinematics/core';
+import {
+  formatLightTime,
+  DateSlider,
+  type DateSliderViewMode,
+  LanguageSwitcher,
+} from '@worldline-kinematics/ui';
 import {
   getPlanetPositionsWithPreset,
   getMoonPositionWithPreset,
@@ -33,358 +49,201 @@ import {
   type MoonPosition,
   type PresetName,
 } from '../utils/planetaryPositions';
+import { useLocaleContext } from '../contexts/LocaleContext';
+import {
+  ORBITAL_VELOCITIES,
+  PLANET_INFO,
+  ROTATION_SPEEDS_KMH,
+  BODY_ORDER,
+  PRESET_INFO,
+  VISIBLE_PRESETS,
+  PlanetSelector,
+  VisualModeInfoModal,
+  type SelectedBody,
+} from './scene/index';
+import { getAppContent } from '../i18n';
+import { IS_DEVELOPMENT } from '../config';
+import { SpacetimeTitle } from './SpacetimeTitle';
+import { MobileSettingsSheet } from './MobileSettingsSheet';
+
+// Translation context for components that need localized content
+type AppContent = ReturnType<typeof getAppContent>;
+const ContentContext = createContext<AppContent | null>(null);
+
+function useContent(): AppContent {
+  const content = useContext(ContentContext);
+  if (!content) {
+    throw new Error('useContent must be used within ContentContext.Provider');
+  }
+  return content;
+}
+
+/** Methods exposed by Scene for external control */
+export interface SceneHandle {
+  /** Prepare the scene for share screenshot (focus on Earth at birth date). Returns true if changes were made. */
+  prepareForShare: () => boolean;
+}
 
 interface SceneProps {
   mode: ReferenceFrame;
   latitude: number;
   longitude?: number;
+  birthDate?: Date | null;
+  showBirthMarker?: boolean;
+  onEditBirthData?: () => void;
+  /** Birth place name (e.g., "Rio de Janeiro, Brazil") for display */
+  birthPlaceName?: string | null;
+  /** Called when the scene is fully loaded and ready to display */
+  onReady?: () => void;
+  /** Called with the canvas element for screenshot capture */
+  onCanvasReady?: (canvas: HTMLCanvasElement) => void;
+  /** Ref to expose scene control methods */
+  sceneRef?: React.RefObject<SceneHandle | null>;
 }
 
-/**
- * Orbital velocities in km/s for each body.
- * Source: NASA Planetary Fact Sheets
- * https://nssdc.gsfc.nasa.gov/planetary/factsheet/
- */
-const ORBITAL_VELOCITIES: Record<string, number> = {
-  Sun: 0, // Reference frame
-  Mercury: 47.87,
-  Venus: 35.02,
-  Earth: 29.78,
-  Moon: 1.022, // Around Earth
-  Mars: 24.07,
-  Jupiter: 13.07,
-  Saturn: 9.68,
-  Uranus: 6.8,
-  Neptune: 5.43,
-};
+// Enable THREE.js asset caching only in production for better performance on revisits
+// In development, disable caching to properly test loading behavior
+THREE.Cache.enabled = !IS_DEVELOPMENT;
 
 /**
- * Calculates the current season for Earth based on the date.
- * Uses astronomical definitions based on solstices and equinoxes.
+ * Computes the expected subsolar longitude for a given UTC time.
+ * The subsolar point is where the Sun is directly overhead.
  *
- * @param date The date to check
- * @param hemisphere 'northern' or 'southern'
- * @returns Season name and progress percentage through the season
- */
-function getEarthSeason(
-  date: Date,
-  hemisphere: 'northern' | 'southern' = 'northern'
-): {
-  season: string;
-  progress: number;
-  nextEvent: string;
-  daysUntilNext: number;
-} {
-  const year = date.getFullYear();
-
-  // Approximate dates for astronomical events (these vary by a day or two each year)
-  // Using fixed approximations for simplicity
-  const vernalEquinox = new Date(year, 2, 20); // March 20
-  const summerSolstice = new Date(year, 5, 21); // June 21
-  const autumnalEquinox = new Date(year, 8, 22); // September 22
-  const winterSolstice = new Date(year, 11, 21); // December 21
-
-  const events = [
-    {
-      date: vernalEquinox,
-      northSeason: 'Spring',
-      southSeason: 'Autumn',
-      next: 'Summer Solstice',
-    },
-    {
-      date: summerSolstice,
-      northSeason: 'Summer',
-      southSeason: 'Winter',
-      next: 'Autumn Equinox',
-    },
-    {
-      date: autumnalEquinox,
-      northSeason: 'Autumn',
-      southSeason: 'Spring',
-      next: 'Winter Solstice',
-    },
-    {
-      date: winterSolstice,
-      northSeason: 'Winter',
-      southSeason: 'Summer',
-      next: 'Spring Equinox',
-    },
-  ];
-
-  // Handle wrap-around for dates before vernal equinox
-  const prevWinterSolstice = new Date(year - 1, 11, 21);
-
-  let currentSeason = 'Winter';
-  let nextEvent = 'Spring Equinox';
-  let seasonStart = prevWinterSolstice;
-  let seasonEnd = vernalEquinox;
-
-  for (let i = 0; i < events.length; i++) {
-    const event = events[i];
-    const nextIndex = (i + 1) % events.length;
-    const nextEventDate =
-      nextIndex === 0
-        ? new Date(year + 1, 2, 20) // Next year's vernal equinox
-        : events[nextIndex].date;
-
-    if (date >= event.date && date < nextEventDate) {
-      currentSeason = hemisphere === 'northern' ? event.northSeason : event.southSeason;
-      nextEvent =
-        hemisphere === 'northern'
-          ? nextIndex === 0
-            ? 'Spring Equinox'
-            : events[nextIndex].next
-          : events[nextIndex].next;
-      seasonStart = event.date;
-      seasonEnd = nextEventDate;
-      break;
-    }
-  }
-
-  // Handle dates before first event of the year
-  if (date < vernalEquinox) {
-    currentSeason = hemisphere === 'northern' ? 'Winter' : 'Summer';
-    nextEvent = hemisphere === 'northern' ? 'Spring Equinox' : 'Autumn Equinox';
-    seasonStart = prevWinterSolstice;
-    seasonEnd = vernalEquinox;
-  }
-
-  const seasonLength = seasonEnd.getTime() - seasonStart.getTime();
-  const elapsed = date.getTime() - seasonStart.getTime();
-  const progress = Math.max(0, Math.min(100, (elapsed / seasonLength) * 100));
-
-  const daysUntilNext = Math.ceil(
-    (seasonEnd.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  return { season: currentSeason, progress, nextEvent, daysUntilNext };
-}
-
-/**
- * Calculate moon phase for a given date.
- * Uses a simple algorithm based on the synodic month (29.53 days).
+ * At UTC noon (12:00), the subsolar point is approximately at longitude 0 (Greenwich).
+ * The subsolar point moves westward at 15 degrees per hour as Earth rotates eastward.
  *
- * @param date The date to check
- * @returns Moon phase name, illumination percentage, and age in days
+ * @param date UTC date/time
+ * @returns Subsolar longitude in degrees (-180 to 180)
  */
-function getMoonPhase(date: Date): {
-  phase: string;
-  illumination: number;
-  age: number;
-  emoji: string;
-} {
-  // Known new moon reference: January 6, 2000 at 18:14 UTC
-  const knownNewMoon = new Date(Date.UTC(2000, 0, 6, 18, 14, 0));
-  const synodicMonth = 29.53058867; // Days
-
-  const daysSinceNewMoon =
-    (date.getTime() - knownNewMoon.getTime()) / (1000 * 60 * 60 * 24);
-  const age = ((daysSinceNewMoon % synodicMonth) + synodicMonth) % synodicMonth;
-
-  // Calculate illumination (approximate using cosine)
-  const cyclePosition = age / synodicMonth;
-  const illumination = Math.round(
-    ((1 - Math.cos(cyclePosition * 2 * Math.PI)) / 2) * 100
-  );
-
-  // Determine phase name
-  let phase: string;
-  let emoji: string;
-  if (age < 1.85) {
-    phase = 'New Moon';
-    emoji = '\u{1F311}'; // New moon symbol
-  } else if (age < 5.53) {
-    phase = 'Waxing Crescent';
-    emoji = '\u{1F312}';
-  } else if (age < 9.22) {
-    phase = 'First Quarter';
-    emoji = '\u{1F313}';
-  } else if (age < 12.91) {
-    phase = 'Waxing Gibbous';
-    emoji = '\u{1F314}';
-  } else if (age < 16.61) {
-    phase = 'Full Moon';
-    emoji = '\u{1F315}';
-  } else if (age < 20.3) {
-    phase = 'Waning Gibbous';
-    emoji = '\u{1F316}';
-  } else if (age < 23.99) {
-    phase = 'Last Quarter';
-    emoji = '\u{1F317}';
-  } else if (age < 27.68) {
-    phase = 'Waning Crescent';
-    emoji = '\u{1F318}';
-  } else {
-    phase = 'New Moon';
-    emoji = '\u{1F311}';
-  }
-
-  return { phase, illumination, age: Math.round(age * 10) / 10, emoji };
+function computeExpectedSubsolarLongitude(date: Date): number {
+  const utcHours =
+    date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+  // At 12:00 UTC, subsolar longitude = 0
+  // Each hour after noon, longitude decreases by 15 degrees (moves westward)
+  // Each hour before noon, longitude increases by 15 degrees (moves eastward)
+  let longitude = (12 - utcHours) * 15;
+  // Normalize to -180 to 180
+  while (longitude > 180) longitude -= 360;
+  while (longitude < -180) longitude += 360;
+  return longitude;
 }
 
 /**
- * Comprehensive planetary data for the selector.
- * Sources: NASA Planetary Fact Sheets
- * https://nssdc.gsfc.nasa.gov/planetary/factsheet/
+ * Tracks WebGL asset loading and notifies when complete.
+ * Must be used inside a Canvas context.
+ *
+ * Subscribes directly to THREE's DefaultLoadingManager in an effect
+ * to avoid state updates during render. Waits for textures to both
+ * START and FINISH loading before signaling ready.
  */
-const PLANET_INFO: Record<
-  string,
-  {
-    label: string;
-    color: string;
-    massKg: number; // Mass in kg
-    massEarth: number; // Mass relative to Earth
-    diameterKm: number; // Equatorial diameter in km
-    rotationPeriodHours: number; // Rotation period in hours (negative = retrograde)
-    dayLengthHours: number; // Length of day (solar) in hours
-    distanceAU: number; // Mean distance from Sun in AU
-    orbitalPeriodDays: number; // Orbital period in Earth days
-    moons: number; // Known moons
-    rings: boolean; // Has rings
-    type: string; // Planet type
-  }
-> = {
-  Sun: {
-    label: 'Sun',
-    color: '#ffd27d',
-    massKg: 1.989e30,
-    massEarth: 332946,
-    diameterKm: 1392700,
-    rotationPeriodHours: 609.12, // ~25.4 days at equator
-    dayLengthHours: 609.12,
-    distanceAU: 0,
-    orbitalPeriodDays: 0,
-    moons: 0,
-    rings: false,
-    type: 'Star',
-  },
-  Mercury: {
-    label: 'Mercury',
-    color: '#b5b5b5',
-    massKg: 3.285e23,
-    massEarth: 0.055,
-    diameterKm: 4879,
-    rotationPeriodHours: 1407.6, // 58.6 days
-    dayLengthHours: 4222.6, // 176 Earth days
-    distanceAU: 0.387,
-    orbitalPeriodDays: 88,
-    moons: 0,
-    rings: false,
-    type: 'Rocky',
-  },
-  Venus: {
-    label: 'Venus',
-    color: '#e6c87a',
-    massKg: 4.867e24,
-    massEarth: 0.815,
-    diameterKm: 12104,
-    rotationPeriodHours: -5832.5, // 243 days retrograde
-    dayLengthHours: 2802, // 116.75 Earth days
-    distanceAU: 0.723,
-    orbitalPeriodDays: 225,
-    moons: 0,
-    rings: false,
-    type: 'Rocky',
-  },
-  Earth: {
-    label: 'Earth',
-    color: '#4488cc',
-    massKg: 5.972e24,
-    massEarth: 1,
-    diameterKm: 12756,
-    rotationPeriodHours: 23.934,
-    dayLengthHours: 24,
-    distanceAU: 1,
-    orbitalPeriodDays: 365.25,
-    moons: 1,
-    rings: false,
-    type: 'Rocky',
-  },
-  Mars: {
-    label: 'Mars',
-    color: '#c1440e',
-    massKg: 6.39e23,
-    massEarth: 0.107,
-    diameterKm: 6792,
-    rotationPeriodHours: 24.623,
-    dayLengthHours: 24.66,
-    distanceAU: 1.524,
-    orbitalPeriodDays: 687,
-    moons: 2,
-    rings: false,
-    type: 'Rocky',
-  },
-  Jupiter: {
-    label: 'Jupiter',
-    color: '#d4a574',
-    massKg: 1.898e27,
-    massEarth: 317.8,
-    diameterKm: 142984,
-    rotationPeriodHours: 9.925,
-    dayLengthHours: 9.925,
-    distanceAU: 5.203,
-    orbitalPeriodDays: 4333,
-    moons: 95,
-    rings: true,
-    type: 'Gas Giant',
-  },
-  Saturn: {
-    label: 'Saturn',
-    color: '#f4d59e',
-    massKg: 5.683e26,
-    massEarth: 95.2,
-    diameterKm: 120536,
-    rotationPeriodHours: 10.656,
-    dayLengthHours: 10.656,
-    distanceAU: 9.537,
-    orbitalPeriodDays: 10759,
-    moons: 146,
-    rings: true,
-    type: 'Gas Giant',
-  },
-  Uranus: {
-    label: 'Uranus',
-    color: '#b5e3e3',
-    massKg: 8.681e25,
-    massEarth: 14.5,
-    diameterKm: 51118,
-    rotationPeriodHours: -17.24, // retrograde
-    dayLengthHours: 17.24,
-    distanceAU: 19.19,
-    orbitalPeriodDays: 30687,
-    moons: 28,
-    rings: true,
-    type: 'Ice Giant',
-  },
-  Neptune: {
-    label: 'Neptune',
-    color: '#5b7fde',
-    massKg: 1.024e26,
-    massEarth: 17.1,
-    diameterKm: 49528,
-    rotationPeriodHours: 16.11,
-    dayLengthHours: 16.11,
-    distanceAU: 30.07,
-    orbitalPeriodDays: 60190,
-    moons: 16,
-    rings: true,
-    type: 'Ice Giant',
-  },
-  Moon: {
-    label: 'Moon',
-    color: '#c4c4c4',
-    massKg: 7.342e22,
-    massEarth: 0.0123,
-    diameterKm: 3475,
-    rotationPeriodHours: 655.7, // 27.32 days (tidally locked)
-    dayLengthHours: 708.7, // 29.53 Earth days (synodic period)
-    distanceAU: 0.00257, // ~384,400 km from Earth
-    orbitalPeriodDays: 27.32,
-    moons: 0,
-    rings: false,
-    type: 'Moon',
-  },
-};
+function SceneLoadingTracker({ onReady }: { onReady: () => void }) {
+  const hasCalledReady = useRef(false);
+  const hasLoadingStarted = useRef(false);
+  const pendingItems = useRef(0);
+  const totalItemsLoaded = useRef(0);
+
+  useEffect(() => {
+    const manager = THREE.DefaultLoadingManager;
+
+    const originalOnStart = manager.onStart;
+    const originalOnLoad = manager.onLoad;
+    const originalOnProgress = manager.onProgress;
+    const originalOnError = manager.onError;
+
+    const signalReady = () => {
+      if (hasCalledReady.current) return;
+      hasCalledReady.current = true;
+
+      // Double requestAnimationFrame to ensure the frame has painted
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          onReady();
+        });
+      });
+    };
+
+    // Track when each item starts loading
+    manager.onStart = (url, loaded, total) => {
+      hasLoadingStarted.current = true;
+      pendingItems.current = total - loaded;
+      originalOnStart?.(url, loaded, total);
+    };
+
+    // Track progress to know how many items are pending
+    manager.onProgress = (url, loaded, total) => {
+      hasLoadingStarted.current = true;
+      pendingItems.current = total - loaded;
+      totalItemsLoaded.current = loaded;
+      originalOnProgress?.(url, loaded, total);
+    };
+
+    // Track when all loading completes
+    manager.onLoad = () => {
+      originalOnLoad?.();
+      pendingItems.current = 0;
+
+      // Only signal ready if loading actually started
+      // This prevents premature ready when no textures were queued yet
+      if (hasLoadingStarted.current) {
+        signalReady();
+      }
+    };
+
+    // Also handle errors - don't block forever if a texture fails
+    manager.onError = (url) => {
+      originalOnError?.(url);
+      // Continue anyway after error
+    };
+
+    // Poll to check if loading is truly complete
+    // We need to wait for loading to START first, then for it to complete
+    // Minimum wait time ensures textures have a chance to begin loading
+    const MIN_WAIT_MS = 1000; // Wait at least 1 second for loading to start
+    const startTime = Date.now();
+
+    const pollInterval = setInterval(() => {
+      if (hasCalledReady.current) {
+        clearInterval(pollInterval);
+        return;
+      }
+
+      const elapsed = Date.now() - startTime;
+
+      // Don't check until minimum time has passed
+      if (elapsed < MIN_WAIT_MS) {
+        return;
+      }
+
+      // If loading has started AND all items are loaded, we're ready
+      if (hasLoadingStarted.current && pendingItems.current === 0) {
+        // Wait one more cycle to be sure nothing else is queued
+        setTimeout(() => {
+          if (hasCalledReady.current) return;
+          if (pendingItems.current === 0) {
+            signalReady();
+          }
+        }, 200);
+      }
+
+      // Fallback: if no loading started after 3 seconds, assume no textures
+      // and signal ready (shouldn't happen in normal operation)
+      if (!hasLoadingStarted.current && elapsed > 3000) {
+        signalReady();
+      }
+    }, 100);
+
+    // Cleanup
+    return () => {
+      manager.onStart = originalOnStart;
+      manager.onLoad = originalOnLoad;
+      manager.onProgress = originalOnProgress;
+      manager.onError = originalOnError;
+      clearInterval(pollInterval);
+    };
+  }, [onReady]);
+
+  return null;
+}
 
 /**
  * Sun wrapper that uses the fidelity-aware Sun component.
@@ -396,15 +255,54 @@ const PLANET_INFO: Record<
 function Sun({
   size = 0.25,
   position = [0, 0, 0] as [number, number, number],
+  onClick,
+  highlight = false,
+  showLabel = false,
 }: {
   size?: number;
   position?: [number, number, number];
+  onClick?: () => void;
+  highlight?: boolean;
+  showLabel?: boolean;
 }) {
+  const content = useContent();
   return (
     <group position={position}>
+      <mesh
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick?.();
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = 'auto';
+        }}
+      >
+        <sphereGeometry args={[size, 1, 1]} />
+        <meshBasicMaterial visible={false} />
+      </mesh>
       <FidelitySun radius={size} />
       {/* No decay - light reaches all planets regardless of scale mode */}
       <pointLight intensity={3} decay={0} color="#fff8e0" />
+
+      {/* Clickable label */}
+      {showLabel && (
+        <Html position={[0, size + 0.08, 0]} center style={{ pointerEvents: 'auto' }}>
+          <div
+            className="flex flex-col items-center gap-0.5 cursor-pointer"
+            onClick={onClick}
+          >
+            <div
+              className={`text-[6px] sm:text-[8px] whitespace-nowrap hover:text-yellow-300 transition-colors ${highlight ? 'text-yellow-300 font-bold' : 'text-white/50'}`}
+            >
+              {content.planets.Sun}
+            </div>
+          </div>
+        </Html>
+      )}
     </group>
   );
 }
@@ -450,7 +348,7 @@ function AsteroidBelt({
       );
     }
     return new Float32Array(positions);
-  }, [innerRadius, outerRadius, count, center[0], center[1], center[2]]);
+  }, [innerRadius, outerRadius, count, center]);
 
   return (
     <points>
@@ -468,46 +366,42 @@ function AsteroidBelt({
   );
 }
 
-/**
- * Convert AU distance to light travel time string.
- * Light travels 1 AU in approximately 499 seconds (8.317 minutes).
- */
-function formatLightTime(distanceAU: number): string {
-  const lightSecondsPerAU = 499.004784; // seconds for light to travel 1 AU
-  const totalSeconds = distanceAU * lightSecondsPerAU;
-
-  if (totalSeconds < 60) {
-    return `${totalSeconds.toFixed(0)}s`;
-  } else if (totalSeconds < 3600) {
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = Math.round(totalSeconds % 60);
-    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
-  } else {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.round((totalSeconds % 3600) / 60);
-    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-  }
-}
+// formatLightTime is now imported from @worldline-kinematics/ui
 
 /**
  * Saturn's rings wrapper that uses the fidelity-aware SaturnRings component.
  * In Standard mode: Simple combined ring.
  * In Cinematic mode: Multiple ring components (D, C, B, Cassini Division, A, F)
  *                    with physically accurate dimensions from PDS data.
+ *
+ * When orientation data (northPole + rotationAngleDeg) is provided, the rings
+ * are oriented using the same quaternion as Saturn's body, ensuring coplanarity.
  */
 function SaturnRingsWrapper({
   planetSize,
   planetPosition,
+  sunPosition = [0, 0, 0],
+  northPole,
+  rotationAngleDeg,
 }: {
   planetSize: number;
   planetPosition: [number, number, number];
+  sunPosition?: [number, number, number];
+  northPole?: [number, number, number];
+  rotationAngleDeg?: number;
 }) {
+  // Compute quaternion if orientation data is available
+  const quaternion = northPole
+    ? computeBodyQuaternion(northPole, rotationAngleDeg ?? 0, 0)
+    : undefined;
+
   return (
     <FidelitySaturnRings
       saturnRadius={planetSize}
       position={planetPosition}
-      sunPosition={[0, 0, 0]}
-      applyTilt={true}
+      sunPosition={sunPosition}
+      applyTilt={!quaternion}
+      quaternion={quaternion}
     />
   );
 }
@@ -522,6 +416,7 @@ function Planet({
   name,
   color,
   size,
+  sunPosition = [0, 0, 0],
   showLabel = true,
   highlight = false,
   showSpeed = false,
@@ -533,6 +428,7 @@ function Planet({
   name: string;
   color: string;
   size: number;
+  sunPosition?: [number, number, number];
   showLabel?: boolean;
   highlight?: boolean;
   showSpeed?: boolean;
@@ -540,6 +436,8 @@ function Planet({
   showRotationAxis?: boolean;
   onClick?: () => void;
 }) {
+  const content = useContent();
+  const translatedName = content.planets[name as keyof typeof content.planets] || name;
   const orbitalSpeed = ORBITAL_VELOCITIES[name];
 
   // Format AU distance with appropriate precision
@@ -556,7 +454,7 @@ function Planet({
         position={[position.x, position.y, position.z]}
         radius={size}
         color={color}
-        sunPosition={[0, 0, 0]}
+        sunPosition={sunPosition}
         showLabel={false} // We'll render our own label with extra info
         onClick={onClick}
         northPole={position.northPole}
@@ -565,39 +463,45 @@ function Planet({
         showRotationAxis={showRotationAxis && highlight} // Show axis on highlighted/selected planet when enabled
       />
 
-      {/* Saturn rings - uses fidelity-aware component */}
+      {/* Saturn rings - uses fidelity-aware component with body orientation */}
       {name === 'Saturn' && (
         <SaturnRingsWrapper
           planetSize={size}
           planetPosition={[position.x, position.y, position.z]}
+          sunPosition={sunPosition}
+          northPole={position.northPole}
+          rotationAngleDeg={position.rotationAngleDeg}
         />
       )}
 
-      {/* Custom label with orbital speed and distance info */}
+      {/* Custom label with orbital speed and distance info - clickable */}
       {showLabel && (
         <Html
           position={[position.x, position.y + size + 0.08, position.z]}
           center
-          style={{ pointerEvents: 'none' }}
+          style={{ pointerEvents: 'auto' }}
         >
-          <div className="flex flex-col items-center gap-0.5">
+          <div
+            className="flex flex-col items-center gap-0.5 cursor-pointer"
+            onClick={onClick}
+          >
             <div
-              className={`text-[8px] whitespace-nowrap ${highlight ? 'text-blue-300 font-bold' : 'text-white/50'}`}
+              className={`text-[6px] sm:text-[8px] whitespace-nowrap hover:text-blue-300 transition-colors ${highlight ? 'text-blue-300 font-bold' : 'text-white/50'}`}
             >
-              {name}
+              {translatedName}
             </div>
             {showSpeed && orbitalSpeed && (
-              <div className="text-[7px] text-orange-400/80 whitespace-nowrap">
+              <div className="text-[5px] sm:text-[7px] text-orange-400/80 whitespace-nowrap">
                 {orbitalSpeed.toFixed(1)} km/s
               </div>
             )}
             {showDistance && (
               <div className="flex flex-col items-center gap-0.5 mt-0.5">
-                <div className="text-[7px] text-cyan-400/80 whitespace-nowrap">
-                  {auDisplay} AU
+                <div className="text-[5px] sm:text-[7px] text-cyan-400/80 whitespace-nowrap">
+                  {auDisplay} {content.units.au}
                 </div>
-                <div className="text-[6px] text-white/40 whitespace-nowrap">
-                  light: {formatLightTime(position.distanceAU)}
+                <div className="text-[5px] sm:text-[6px] text-white/40 whitespace-nowrap">
+                  {content.planetInfo.light}: {formatLightTime(position.distanceAU)}
                 </div>
               </div>
             )}
@@ -608,9 +512,12 @@ function Planet({
   );
 }
 
+// Body quaternion computation is now imported from @worldline-kinematics/scene
+// via computeBodyQuaternion - removes duplicate OBLIQUITY_J2000, EQJ_NORTH_SCENE
+
 /**
  * Moon sphere with texture.
- * Now supports selection, click handling, and rotation axis visualization.
+ * Uses proper orientation data for correct texture alignment.
  */
 function Moon({
   position,
@@ -627,6 +534,7 @@ function Moon({
   highlight?: boolean;
   showRotationAxis?: boolean;
 }) {
+  const content = useContent();
   const moonTexture = useLoader(THREE.TextureLoader, '/textures/2k_moon.jpg');
   moonTexture.colorSpace = THREE.SRGBColorSpace;
 
@@ -637,35 +545,62 @@ function Moon({
     z: earthPosition.z + position.z,
   };
 
-  // Moon's axial tilt is about 6.68 degrees to its orbital plane
-  const moonTiltRadians = (6.68 * Math.PI) / 180;
+  // Compute orientation from ephemeris data or fallback to legacy tilt
+  const { northDir, quaternion } = useMemo(() => {
+    if (position.northPole) {
+      const pole = new THREE.Vector3(
+        position.northPole[0],
+        position.northPole[1],
+        position.northPole[2]
+      );
+      // Use computeBodyQuaternion from @worldline-kinematics/scene
+      const qArr = computeBodyQuaternion(
+        position.northPole,
+        position.rotationAngleDeg ?? 0
+      );
+      return {
+        northDir: pole.clone().normalize(),
+        quaternion: new THREE.Quaternion(qArr[0], qArr[1], qArr[2], qArr[3]),
+      };
+    }
+
+    // Fallback: legacy tilt (6.68 degrees)
+    const moonTiltRadians = (6.68 * Math.PI) / 180;
+    const fallbackNorth = new THREE.Vector3(
+      0,
+      Math.cos(moonTiltRadians),
+      Math.sin(moonTiltRadians)
+    ).normalize();
+    return {
+      northDir: fallbackNorth,
+      quaternion: null,
+    };
+  }, [position.northPole, position.rotationAngleDeg]);
+
   const axisLength = size * 2.5;
-  const northDir = new THREE.Vector3(
-    0,
-    Math.cos(moonTiltRadians),
-    Math.sin(moonTiltRadians)
-  ).normalize();
   const northPos = northDir.clone().multiplyScalar(axisLength);
   const southPos = northDir.clone().multiplyScalar(-axisLength);
 
   return (
     <group position={[absolutePos.x, absolutePos.y, absolutePos.z]}>
-      <mesh
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick?.();
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          document.body.style.cursor = 'pointer';
-        }}
-        onPointerOut={() => {
-          document.body.style.cursor = 'auto';
-        }}
-      >
-        <sphereGeometry args={[size, 32, 32]} />
-        <meshStandardMaterial map={moonTexture} roughness={0.9} metalness={0} />
-      </mesh>
+      <group quaternion={quaternion ?? undefined}>
+        <mesh
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick?.();
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            document.body.style.cursor = 'pointer';
+          }}
+          onPointerOut={() => {
+            document.body.style.cursor = 'auto';
+          }}
+        >
+          <sphereGeometry args={[size, 32, 32]} />
+          <meshStandardMaterial map={moonTexture} roughness={0.9} metalness={0} />
+        </mesh>
+      </group>
 
       {/* Rotation axis visualization */}
       {showRotationAxis && (
@@ -720,12 +655,13 @@ function Moon({
         </group>
       )}
 
-      {/* Label */}
-      <Html position={[0, size + 0.05, 0]} center style={{ pointerEvents: 'none' }}>
+      {/* Label - clickable */}
+      <Html position={[0, size + 0.05, 0]} center style={{ pointerEvents: 'auto' }}>
         <div
-          className={`text-[8px] whitespace-nowrap ${highlight ? 'text-blue-300 font-bold' : 'text-white/50'}`}
+          className={`text-[8px] whitespace-nowrap cursor-pointer hover:text-blue-300 transition-colors ${highlight ? 'text-blue-300 font-bold' : 'text-white/50'}`}
+          onClick={onClick}
         >
-          Moon
+          {content.planets.Moon}
         </div>
       </Html>
     </group>
@@ -790,6 +726,7 @@ function TrajectoryArrow({
  * Galactic center visualization.
  */
 function GalacticCenter({ position }: { position: [number, number, number] }) {
+  const content = useContent();
   return (
     <group position={position}>
       <mesh>
@@ -802,7 +739,7 @@ function GalacticCenter({ position }: { position: [number, number, number] }) {
       </mesh>
       <Html position={[0, 0.8, 0]} center style={{ pointerEvents: 'none' }}>
         <div className="text-[9px] text-amber-300/80 whitespace-nowrap">
-          Galactic Center
+          {content.scene.galacticCenter}
         </div>
       </Html>
     </group>
@@ -825,337 +762,19 @@ function SpeedHUD({
 }) {
   return (
     <div
-      className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm px-4 py-3 rounded-lg border"
+      className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm px-2 py-1.5 sm:px-4 sm:py-3 rounded-lg border"
       style={{ borderColor: color }}
     >
-      <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color }}>
+      <div
+        className="text-[7px] sm:text-[10px] uppercase tracking-wider mb-0.5 sm:mb-1"
+        style={{ color }}
+      >
         {label}
       </div>
-      <div className="text-2xl font-bold text-white">
+      <div className="text-base sm:text-2xl font-bold text-white">
         {speed.toFixed(2)}{' '}
-        <span className="text-sm font-normal text-white/60">{unit}</span>
+        <span className="text-[9px] sm:text-sm font-normal text-white/60">{unit}</span>
       </div>
-    </div>
-  );
-}
-
-/**
- * Body selector dropdown for choosing which body to center on.
- */
-type SelectedBody =
-  | 'Sun'
-  | 'Mercury'
-  | 'Venus'
-  | 'Earth'
-  | 'Moon'
-  | 'Mars'
-  | 'Jupiter'
-  | 'Saturn'
-  | 'Uranus'
-  | 'Neptune';
-
-const BODY_ORDER: SelectedBody[] = [
-  'Sun',
-  'Mercury',
-  'Venus',
-  'Earth',
-  'Moon',
-  'Mars',
-  'Jupiter',
-  'Saturn',
-  'Uranus',
-  'Neptune',
-];
-
-// Legacy alias
-type SelectedPlanet = SelectedBody;
-const PLANET_ORDER = BODY_ORDER;
-
-/**
- * Body texture paths for selector icons.
- */
-const BODY_ICON_TEXTURES: Record<string, string> = {
-  Sun: '/textures/2k_sun.jpg',
-  Mercury: '/textures/2k_mercury.jpg',
-  Venus: '/textures/2k_venus_surface.jpg',
-  Earth: '/textures/earth_daymap.jpg',
-  Moon: '/textures/2k_moon.jpg',
-  Mars: '/textures/2k_mars.jpg',
-  Jupiter: '/textures/2k_jupiter.jpg',
-  Saturn: '/textures/2k_saturn.jpg',
-  Uranus: '/textures/2k_uranus.jpg',
-  Neptune: '/textures/2k_neptune.jpg',
-};
-
-// Legacy alias
-const PLANET_ICON_TEXTURES = BODY_ICON_TEXTURES;
-
-/**
- * Format a large number with scientific notation or appropriate suffix.
- */
-function formatNumber(n: number): string {
-  if (n >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
-  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
-  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
-  return n.toFixed(1);
-}
-
-/**
- * Format rotation period for display.
- */
-function formatRotation(hours: number): string {
-  const isRetrograde = hours < 0;
-  const absHours = Math.abs(hours);
-  if (absHours >= 24) {
-    const days = absHours / 24;
-    return `${days.toFixed(1)}d${isRetrograde ? ' (R)' : ''}`;
-  }
-  return `${absHours.toFixed(1)}h${isRetrograde ? ' (R)' : ''}`;
-}
-
-function PlanetSelector({
-  selected,
-  onChange,
-  viewDate,
-}: {
-  selected: SelectedPlanet;
-  onChange: (p: SelectedPlanet) => void;
-  viewDate?: Date;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const info = PLANET_INFO[selected];
-  const orbitalSpeed = ORBITAL_VELOCITIES[selected];
-
-  // Calculate comparison values
-  const yearInEarthDays = info.orbitalPeriodDays;
-  const yearInEarthYears = info.orbitalPeriodDays / 365.25;
-  const dayInEarthHours = Math.abs(info.dayLengthHours);
-
-  // Get Earth season if Earth is selected
-  const earthSeason = selected === 'Earth' && viewDate ? getEarthSeason(viewDate) : null;
-
-  // Get Moon phase if Moon is selected
-  const moonPhase = selected === 'Moon' && viewDate ? getMoonPhase(viewDate) : null;
-
-  return (
-    <div className="relative">
-      {/* Selected planet info card */}
-      <div className="bg-black/80 backdrop-blur-sm rounded-lg border border-white/20 overflow-hidden min-w-[200px]">
-        {/* Header with planet selector */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 w-full px-3 py-2 hover:bg-white/5 transition-colors border-b border-white/10"
-        >
-          <img
-            src={PLANET_ICON_TEXTURES[selected]}
-            alt={selected}
-            className="w-7 h-7 rounded-full object-cover"
-          />
-          <div className="flex-1 text-left">
-            <div className="text-white text-sm font-medium">{info.label}</div>
-            <div className="text-[9px] text-white/50">{info.type}</div>
-          </div>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            strokeWidth="2"
-            className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          >
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </button>
-
-        {/* Planet stats */}
-        <div className="px-3 py-2 space-y-1.5">
-          {/* Earth Season - only shown for Earth */}
-          {earthSeason && (
-            <div className="flex justify-between items-center bg-gradient-to-r from-emerald-500/10 to-transparent rounded px-1 py-0.5 -mx-1">
-              <span className="text-[9px] text-emerald-400/70 uppercase">Season</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-emerald-400 font-medium">
-                  {earthSeason.season}
-                </span>
-                <span className="text-[8px] text-white/40">
-                  ({earthSeason.daysUntilNext}d to {earthSeason.nextEvent})
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Moon Phase - only shown for Moon */}
-          {moonPhase && (
-            <div className="flex justify-between items-center bg-gradient-to-r from-slate-400/10 to-transparent rounded px-1 py-0.5 -mx-1">
-              <span className="text-[9px] text-slate-300/70 uppercase">Phase</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-200 font-medium">
-                  {moonPhase.phase}
-                </span>
-                <span className="text-[8px] text-white/40">
-                  ({moonPhase.illumination}% lit)
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Orbital velocity */}
-          {selected !== 'Sun' && (
-            <div className="flex justify-between items-center">
-              <span className="text-[9px] text-white/40 uppercase">
-                {selected === 'Moon' ? 'Orbit (Earth)' : 'Orbital Speed'}
-              </span>
-              <span className="text-xs text-orange-400 font-medium">
-                {orbitalSpeed.toFixed(2)} km/s
-              </span>
-            </div>
-          )}
-
-          {/* Rotation / Day Length */}
-          <div className="flex justify-between items-center">
-            <span className="text-[9px] text-white/40 uppercase">Rotation</span>
-            <span className="text-xs text-cyan-400 font-medium">
-              {formatRotation(info.rotationPeriodHours)}
-            </span>
-          </div>
-
-          {/* Distance from Sun (or Earth for Moon) */}
-          {selected !== 'Sun' && (
-            <div className="flex justify-between items-center">
-              <span className="text-[9px] text-white/40 uppercase">
-                {selected === 'Moon' ? 'Distance (Earth)' : 'Distance'}
-              </span>
-              <span className="text-xs text-green-400 font-medium">
-                {selected === 'Moon' ? '384,400 km' : `${info.distanceAU.toFixed(2)} AU`}
-              </span>
-            </div>
-          )}
-
-          {/* Mass */}
-          <div className="flex justify-between items-center">
-            <span className="text-[9px] text-white/40 uppercase">Mass</span>
-            <span className="text-xs text-purple-400 font-medium">
-              {selected === 'Sun'
-                ? formatNumber(info.massEarth) + 'x'
-                : info.massEarth < 1
-                  ? info.massEarth.toFixed(3) + 'x'
-                  : info.massEarth.toFixed(1) + 'x'}{' '}
-              Earth
-            </span>
-          </div>
-
-          {/* Diameter */}
-          <div className="flex justify-between items-center">
-            <span className="text-[9px] text-white/40 uppercase">Diameter</span>
-            <span className="text-xs text-white/70 font-medium">
-              {formatNumber(info.diameterKm)} km
-            </span>
-          </div>
-
-          {/* Additional info row */}
-          <div className="flex gap-3 pt-1 border-t border-white/5">
-            {/* Moons */}
-            <div className="flex items-center gap-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="text-white/30"
-              >
-                <circle cx="12" cy="12" r="10" />
-              </svg>
-              <span className="text-[9px] text-white/50">
-                {info.moons} moon{info.moons !== 1 ? 's' : ''}
-              </span>
-            </div>
-            {/* Orbital period in Earth years/days */}
-            {selected !== 'Sun' && info.orbitalPeriodDays > 0 && (
-              <div className="flex items-center gap-1 ml-auto">
-                <span className="text-[9px] text-white/50">
-                  {yearInEarthYears < 1
-                    ? `${yearInEarthDays.toFixed(0)}d orbit`
-                    : `${yearInEarthYears.toFixed(1)}y orbit`}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Comparison to Earth - for non-Earth planets */}
-          {selected !== 'Sun' && selected !== 'Earth' && (
-            <div className="pt-1.5 border-t border-white/10 space-y-1">
-              <div className="text-[8px] text-white/30 uppercase tracking-wider">
-                Compared to Earth
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-1 bg-white/5 rounded px-1.5 py-1">
-                  <div className="text-[8px] text-white/40">Year</div>
-                  <div className="text-[10px] text-yellow-400 font-medium">
-                    {yearInEarthYears < 0.1
-                      ? `${yearInEarthDays.toFixed(0)} days`
-                      : yearInEarthYears < 2
-                        ? `${yearInEarthDays.toFixed(0)} days`
-                        : `${yearInEarthYears.toFixed(1)} years`}
-                  </div>
-                </div>
-                <div className="flex-1 bg-white/5 rounded px-1.5 py-1">
-                  <div className="text-[8px] text-white/40">Day</div>
-                  <div className="text-[10px] text-blue-400 font-medium">
-                    {dayInEarthHours < 24
-                      ? `${dayInEarthHours.toFixed(1)}h`
-                      : dayInEarthHours < 168
-                        ? `${(dayInEarthHours / 24).toFixed(1)} days`
-                        : `${(dayInEarthHours / 24).toFixed(0)} days`}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Dropdown menu */}
-      {isOpen && (
-        <div className="absolute top-full right-0 mt-2 bg-black/95 backdrop-blur-sm rounded-lg border border-white/20 overflow-hidden min-w-[200px] max-h-[300px] overflow-y-auto z-50">
-          {PLANET_ORDER.map((planet) => {
-            const pInfo = PLANET_INFO[planet];
-            const pSpeed = ORBITAL_VELOCITIES[planet];
-            return (
-              <button
-                key={planet}
-                onClick={() => {
-                  onChange(planet);
-                  setIsOpen(false);
-                }}
-                className={`flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-white/10 transition-colors ${
-                  planet === selected ? 'bg-blue-500/20 border-l-2 border-blue-400' : ''
-                }`}
-              >
-                <img
-                  src={PLANET_ICON_TEXTURES[planet]}
-                  alt={planet}
-                  className="w-6 h-6 rounded-full object-cover"
-                />
-                <div className="flex-1">
-                  <div className="text-white text-sm">{planet}</div>
-                  <div className="text-[9px] text-white/40">
-                    {planet === 'Sun' ? 'Center' : `${pSpeed.toFixed(1)} km/s`}
-                    {planet === 'Moon' && ' (around Earth)'}
-                    {planet !== 'Sun' &&
-                      planet !== 'Moon' &&
-                      ` | ${pInfo.distanceAU.toFixed(2)} AU`}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
@@ -1191,9 +810,11 @@ function OrbitFromElements({
   lineWidth?: number;
 }) {
   const el = ORBITAL_ELEMENTS[planetName];
-  if (!el) return null;
 
   const points = useMemo(() => {
+    // No orbital elements for this planet
+    if (!el) return [];
+
     const pts: THREE.Vector3[] = [];
 
     // Planet position relative to Sun (in floating-origin coords)
@@ -1239,14 +860,7 @@ function OrbitFromElements({
       pts.push(point);
     }
     return pts;
-  }, [
-    planetPosition[0],
-    planetPosition[1],
-    planetPosition[2],
-    sunPosition[0],
-    sunPosition[1],
-    sunPosition[2],
-  ]);
+  }, [el, planetPosition, sunPosition]);
 
   if (points.length === 0) return null;
   return (
@@ -1324,16 +938,7 @@ function MotionTrail({
       });
     }
     return points;
-  }, [
-    planet.x,
-    planet.y,
-    planet.z,
-    sunPosition[0],
-    sunPosition[1],
-    sunPosition[2],
-    elements,
-    trailLength,
-  ]);
+  }, [planet.x, planet.y, planet.z, sunPosition, elements, trailLength]);
 
   if (!elements || trailPoints.length === 0) return null;
 
@@ -1413,6 +1018,9 @@ function SolarSystemWithOrbits({
   preset = 'schoolModel' as PresetName,
   date,
   onPlanetClick,
+  showBirthMarker = false,
+  birthLatitude = 0,
+  birthLongitude = 0,
 }: {
   showOrbits?: boolean;
   showTrails?: boolean;
@@ -1423,6 +1031,9 @@ function SolarSystemWithOrbits({
   preset?: PresetName;
   date: Date;
   onPlanetClick?: (name: string) => void;
+  showBirthMarker?: boolean;
+  birthLatitude?: number;
+  birthLongitude?: number;
 }) {
   const rawPlanets = useMemo(
     () => getPlanetPositionsWithPreset(date, preset),
@@ -1514,8 +1125,17 @@ function SolarSystemWithOrbits({
 
   return (
     <>
+      {/* Point light at Sun position for realistic day/night illumination */}
+      <pointLight position={sunPos} intensity={2} decay={0} />
+
       {/* Sun positioned using floating-origin coordinates */}
-      <Sun size={sunSize} position={sunPos} />
+      <Sun
+        size={sunSize}
+        position={sunPos}
+        onClick={() => onPlanetClick?.('Sun')}
+        highlight={selectedPlanet === 'Sun'}
+        showLabel={true}
+      />
 
       {/* Main Asteroid Belt (between Mars and Jupiter) - centered on Sun */}
       {showBelts && (
@@ -1552,6 +1172,12 @@ function SolarSystemWithOrbits({
           .map((planet) => {
             const elements = ORBITAL_ELEMENTS[planet.name];
             const isEarth = planet.name === 'Earth';
+            // Thinner lines in Scholar mode where orbits are compressed
+            const isScholar = preset === 'schoolModel';
+            const baseLineWidth = isScholar ? 0.5 : 1;
+            const earthLineWidth = isScholar ? 0.8 : 1.5;
+            const baseOpacity = isScholar ? 0.12 : 0.2;
+            const earthOpacity = isScholar ? 0.35 : 0.5;
             return (
               <OrbitFromElements
                 key={`orbit-${planet.name}`}
@@ -1559,8 +1185,8 @@ function SolarSystemWithOrbits({
                 planetPosition={[planet.x, planet.y, planet.z]}
                 sunPosition={sunPos}
                 color={isEarth ? '#4488cc' : elements?.color || planet.color}
-                opacity={isEarth ? 0.5 : 0.2}
-                lineWidth={isEarth ? 1.5 : 1}
+                opacity={isEarth ? earthOpacity : baseOpacity}
+                lineWidth={isEarth ? earthLineWidth : baseLineWidth}
               />
             );
           })}
@@ -1613,14 +1239,17 @@ function SolarSystemWithOrbits({
             );
           });
 
+          // Thinner Moon orbit in Scholar mode
+          const moonLineWidth = preset === 'schoolModel' ? 0.3 : 0.5;
+          const moonOpacity = preset === 'schoolModel' ? 0.15 : 0.25;
           return (
             <group position={[earthPos.x, earthPos.y, earthPos.z]}>
               {/* Moon orbit line */}
               <Line
                 points={orbitPoints}
                 color="#aaaaaa"
-                lineWidth={0.5}
-                opacity={0.25}
+                lineWidth={moonLineWidth}
+                opacity={moonOpacity}
                 transparent
               />
             </group>
@@ -1638,6 +1267,7 @@ function SolarSystemWithOrbits({
             name={planet.name}
             color={planet.color}
             size={planet.size}
+            sunPosition={sunPos}
             showLabel={true}
             highlight={planet.name === selectedPlanet}
             showSpeed={showOrbits}
@@ -1656,6 +1286,44 @@ function SolarSystemWithOrbits({
         highlight={selectedPlanet === 'Moon'}
         showRotationAxis={showAxes && selectedPlanet === 'Moon'}
       />
+
+      {/* Birth location marker on Earth - only when Earth is selected and marker is enabled */}
+      {showBirthMarker && selectedPlanet === 'Earth' && earthPos.northPole && (
+        <group
+          position={[earthPos.x, earthPos.y, earthPos.z]}
+          quaternion={computeBodyQuaternion(
+            earthPos.northPole,
+            earthPos.rotationAngleDeg ?? 0,
+            earthPos.textureOffsetDeg ?? 0
+          )}
+        >
+          <UserMarker
+            latitude={birthLatitude}
+            longitude={birthLongitude}
+            earthRadius={earthPos.size}
+            pillarHeight={earthPos.size * 0.3}
+          />
+        </group>
+      )}
+
+      {/* Debug display - subsolar longitude diagnostic (requires NEXT_PUBLIC_DEBUG=true) */}
+      {process.env.NEXT_PUBLIC_DEBUG === 'true' && selectedPlanet === 'Earth' && (
+        <Html position={[0, -earthPos.size * 2.5, 0]} center>
+          <div className="bg-black/80 text-white text-xs p-2 rounded font-mono whitespace-nowrap">
+            <div>UTC: {date.toISOString().slice(0, 19)}Z</div>
+            <div>
+              Expected subsolar lon: {computeExpectedSubsolarLongitude(date).toFixed(1)}°
+            </div>
+            <div>
+              Earth W (rotation): {earthPos.rotationAngleDeg?.toFixed(1) ?? 'N/A'}°
+            </div>
+            <div>
+              Sun pos: [{sunPos[0].toFixed(2)}, {sunPos[1].toFixed(2)},{' '}
+              {sunPos[2].toFixed(2)}]
+            </div>
+          </div>
+        </Html>
+      )}
     </>
   );
 }
@@ -1811,39 +1479,6 @@ function AnimatedCamera({
 }
 
 /**
- * Preset display info.
- * Simplified to only two presets: Scholar (educational) and True Scale (accurate).
- * Other presets are kept in the RENDER_PRESETS for potential future use.
- */
-const PRESET_INFO: Partial<
-  Record<PresetName, { label: string; description: string; note?: string; color: string }>
-> = {
-  schoolModel: {
-    label: 'Scholar',
-    description: 'Compressed sizes and distances',
-    note: 'Best for overview',
-    color: '#60a5fa', // blue
-  },
-  trueSizes: {
-    label: 'True Sizes',
-    description: 'Real planet relative sizes',
-    note: 'Compressed distances to prevent overlap',
-    color: '#a855f7', // purple
-  },
-  truePhysical: {
-    label: 'True Scale',
-    description: 'Geometrically Accurate',
-    note: 'Planet sizes are much smaller than distances',
-    color: '#22c55e', // green
-  },
-};
-
-/**
- * Ordered list of visible presets.
- */
-const VISIBLE_PRESETS: PresetName[] = ['schoolModel', 'trueSizes', 'truePhysical'];
-
-/**
  * Scene options panel with preset selector.
  * Uses presets instead of independent distance/size toggles to prevent
  * mathematically impossible scale combinations.
@@ -1851,6 +1486,8 @@ const VISIBLE_PRESETS: PresetName[] = ['schoolModel', 'trueSizes', 'truePhysical
 function SceneOptionsPanel({
   preset,
   onPresetChange,
+  showOrbits,
+  onShowOrbitsChange,
   showTrails,
   onShowTrailsChange,
   showDistances,
@@ -1859,9 +1496,14 @@ function SceneOptionsPanel({
   onShowBeltsChange,
   showAxes,
   onShowAxesChange,
+  showControls,
+  onShowControlsChange,
+  locale,
 }: {
   preset: PresetName;
   onPresetChange: (p: PresetName) => void;
+  showOrbits: boolean;
+  onShowOrbitsChange: (v: boolean) => void;
   showTrails: boolean;
   onShowTrailsChange: (v: boolean) => void;
   showDistances: boolean;
@@ -1870,15 +1512,51 @@ function SceneOptionsPanel({
   onShowBeltsChange: (v: boolean) => void;
   showAxes: boolean;
   onShowAxesChange: (v: boolean) => void;
+  showControls: boolean;
+  onShowControlsChange: (v: boolean) => void;
+  locale?: string;
 }) {
+  const content = useContent();
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Auto-close on mobile after selection (better UX)
+  const closeMobileMenu = () => {
+    if (window.innerWidth < 640) {
+      setIsCollapsed(true);
+    }
+  };
+
+  // Close panel when clicking outside (mobile)
+  useEffect(() => {
+    if (isCollapsed) return;
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        setIsCollapsed(true);
+      }
+    };
+
+    // Use setTimeout to prevent immediate close on the same click that opened it
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isCollapsed]);
 
   // Collapsed mobile view - just a settings button
   const MobileToggle = () => (
     <button
       onClick={() => setIsCollapsed(!isCollapsed)}
       className="sm:hidden bg-black/70 backdrop-blur-sm rounded-lg border border-white/20 p-2.5 flex items-center gap-2"
-      aria-label="Toggle settings"
+      aria-label={content.cameraControls.toggleSettings}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -1893,7 +1571,7 @@ function SceneOptionsPanel({
         <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
         <circle cx="12" cy="12" r="3" />
       </svg>
-      <span className="text-xs text-white/70">Settings</span>
+      <span className="text-xs text-white/70">{content.scene.settings}</span>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="12"
@@ -1910,27 +1588,56 @@ function SceneOptionsPanel({
   );
 
   return (
-    <div className="absolute top-20 left-4 flex flex-col gap-2">
+    <div
+      ref={panelRef}
+      className="absolute top-16 sm:top-20 left-4 flex flex-col gap-2 z-30 max-w-[50vw] sm:max-w-none"
+    >
       {/* Mobile: collapsible toggle */}
       <MobileToggle />
 
       {/* Desktop: always visible, Mobile: collapsible */}
-      <div className={`flex flex-col gap-2 ${isCollapsed ? 'hidden sm:flex' : 'flex'}`}>
+      <div
+        className={`flex flex-col gap-2 ${isCollapsed ? 'hidden sm:flex' : 'flex'} sm:max-h-none max-h-[55vh] overflow-y-auto`}
+      >
         {/* Preset selector */}
         <div className="bg-black/70 backdrop-blur-sm rounded-lg border border-white/20 p-2">
-          <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1.5 px-1">
-            Visual Mode
+          <div className="flex items-center justify-between mb-1.5 px-1">
+            <span className="text-[9px] text-white/40 uppercase tracking-wider">
+              {content.sceneOptions.visualMode}
+            </span>
+            <button
+              onClick={() => setShowInfoModal(true)}
+              className="w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/50 hover:text-white transition-colors"
+              aria-label={content.cameraControls.learnAboutModes}
+              title={content.cameraControls.learnAboutModes}
+            >
+              <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
           </div>
           <div className="flex flex-col gap-1">
             {VISIBLE_PRESETS.map((presetName) => {
               const info = PRESET_INFO[presetName];
               if (!info) return null;
+              const presetTranslation =
+                content.scene.presets?.[presetName as keyof typeof content.scene.presets];
+              const label = presetTranslation?.label ?? info.label;
+              const description = presetTranslation?.description ?? info.description;
+              const note = presetTranslation?.note ?? info.note;
               const isSelected = preset === presetName;
               return (
                 <button
                   key={presetName}
-                  onClick={() => onPresetChange(presetName)}
-                  className={`flex flex-col items-start px-2 py-1.5 rounded text-xs transition-colors ${
+                  onClick={() => {
+                    onPresetChange(presetName);
+                    closeMobileMenu();
+                  }}
+                  className={`flex flex-col items-start px-2 py-1.5 rounded text-xs transition-colors w-full ${
                     isSelected
                       ? 'bg-white/10 border'
                       : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
@@ -1939,11 +1646,11 @@ function SceneOptionsPanel({
                     borderColor: isSelected ? info.color : 'transparent',
                     color: isSelected ? info.color : undefined,
                   }}
-                  title={info.description}
+                  title={description}
                 >
                   <div className="flex items-center gap-2">
                     <span
-                      className="w-3 h-3 rounded-full border-2 flex items-center justify-center"
+                      className="w-3 h-3 rounded-full border-2 flex items-center justify-center flex-shrink-0"
                       style={{ borderColor: isSelected ? info.color : '#ffffff40' }}
                     >
                       {isSelected && (
@@ -1953,16 +1660,12 @@ function SceneOptionsPanel({
                         />
                       )}
                     </span>
-                    <span className="font-medium">{info.label}</span>
+                    <span className="font-medium">{label}</span>
                   </div>
                   {isSelected && (
-                    <div className="flex flex-col ml-5 mt-0.5">
-                      <span className="text-[9px] text-white/40">{info.description}</span>
-                      {info.note && (
-                        <span className="text-[8px] text-white/30 mt-0.5 max-w-[140px] leading-tight">
-                          {info.note}
-                        </span>
-                      )}
+                    <div className="ml-5 mt-1 flex flex-col text-[10px] leading-snug">
+                      <span className="text-white/50">{description}</span>
+                      {note && <span className="text-white/40">{note}</span>}
                     </div>
                   )}
                 </button>
@@ -1974,23 +1677,26 @@ function SceneOptionsPanel({
         {/* Display options */}
         <div className="bg-black/70 backdrop-blur-sm rounded-lg border border-white/20 p-2">
           <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1.5 px-1">
-            Display
+            {content.scene.display}
           </div>
           <div className="flex flex-col gap-1">
-            {/* Orbital trails toggle */}
+            {/* Orbit paths toggle */}
             <button
-              onClick={() => onShowTrailsChange(!showTrails)}
+              onClick={() => {
+                onShowOrbitsChange(!showOrbits);
+                closeMobileMenu();
+              }}
               className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors ${
-                showTrails
-                  ? 'text-blue-300'
+                showOrbits
+                  ? 'text-indigo-300'
                   : 'text-white/60 hover:text-white hover:bg-white/10'
               }`}
             >
               <span
                 className="w-4 h-4 rounded border flex items-center justify-center"
-                style={{ borderColor: showTrails ? '#60a5fa' : '#ffffff40' }}
+                style={{ borderColor: showOrbits ? '#a5b4fc' : '#ffffff40' }}
               >
-                {showTrails && (
+                {showOrbits && (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="10"
@@ -2004,18 +1710,56 @@ function SceneOptionsPanel({
                   </svg>
                 )}
               </span>
-              <span>Orbital Trails</span>
+              <span>{content.scene.orbitPaths}</span>
             </button>
+
+            {/* Orbital trails toggle - sub-option of Orbit Paths */}
+            {showOrbits && (
+              <button
+                onClick={() => {
+                  onShowTrailsChange(!showTrails);
+                  closeMobileMenu();
+                }}
+                className={`flex items-center gap-2 pl-6 pr-2 py-1 rounded text-xs transition-colors ${
+                  showTrails
+                    ? 'text-blue-300'
+                    : 'text-white/50 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <span
+                  className="w-3.5 h-3.5 rounded border flex items-center justify-center"
+                  style={{ borderColor: showTrails ? '#60a5fa' : '#ffffff30' }}
+                >
+                  {showTrails && (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="8"
+                      height="8"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </span>
+                <span>{content.scene.orbitalTrails}</span>
+              </button>
+            )}
 
             {/* Distance labels toggle */}
             <button
-              onClick={() => onShowDistancesChange(!showDistances)}
+              onClick={() => {
+                onShowDistancesChange(!showDistances);
+                closeMobileMenu();
+              }}
               className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors ${
                 showDistances
                   ? 'text-cyan-300'
                   : 'text-white/60 hover:text-white hover:bg-white/10'
               }`}
-              title="Show real distances in AU and light travel time"
+              title={content.cameraControls.showDistancesTitle}
             >
               <span
                 className="w-4 h-4 rounded border flex items-center justify-center"
@@ -2035,18 +1779,21 @@ function SceneOptionsPanel({
                   </svg>
                 )}
               </span>
-              <span>Distance (AU)</span>
+              <span>{content.scene.distanceAU}</span>
             </button>
 
             {/* Asteroid belts toggle */}
             <button
-              onClick={() => onShowBeltsChange(!showBelts)}
+              onClick={() => {
+                onShowBeltsChange(!showBelts);
+                closeMobileMenu();
+              }}
               className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors ${
                 showBelts
                   ? 'text-amber-300'
                   : 'text-white/60 hover:text-white hover:bg-white/10'
               }`}
-              title="Show main asteroid belt and Kuiper belt"
+              title={content.cameraControls.showBeltsTitle}
             >
               <span
                 className="w-4 h-4 rounded border flex items-center justify-center"
@@ -2066,18 +1813,21 @@ function SceneOptionsPanel({
                   </svg>
                 )}
               </span>
-              <span>Asteroid Belts</span>
+              <span>{content.scene.asteroidBelts}</span>
             </button>
 
             {/* Rotation axes toggle */}
             <button
-              onClick={() => onShowAxesChange(!showAxes)}
+              onClick={() => {
+                onShowAxesChange(!showAxes);
+                closeMobileMenu();
+              }}
               className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors ${
                 showAxes
                   ? 'text-purple-300'
                   : 'text-white/60 hover:text-white hover:bg-white/10'
               }`}
-              title="Show rotation axis on selected planet"
+              title={content.cameraControls.showAxisTitle}
             >
               <span
                 className="w-4 h-4 rounded border flex items-center justify-center"
@@ -2097,7 +1847,41 @@ function SceneOptionsPanel({
                   </svg>
                 )}
               </span>
-              <span>Rotation Axis</span>
+              <span>{content.scene.rotationAxis}</span>
+            </button>
+
+            {/* Camera controls toggle */}
+            <button
+              onClick={() => {
+                onShowControlsChange(!showControls);
+                closeMobileMenu();
+              }}
+              className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors ${
+                showControls
+                  ? 'text-emerald-300'
+                  : 'text-white/60 hover:text-white hover:bg-white/10'
+              }`}
+              title={content.cameraControls.showControlsTitle}
+            >
+              <span
+                className="w-4 h-4 rounded border flex items-center justify-center"
+                style={{ borderColor: showControls ? '#6ee7b7' : '#ffffff40' }}
+              >
+                {showControls && (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+              </span>
+              <span>{content.scene.cameraControls}</span>
             </button>
           </div>
         </div>
@@ -2119,10 +1903,17 @@ function SceneOptionsPanel({
               <path d="M11 8v6" />
               <path d="M8 11h6" />
             </svg>
-            Pinch to zoom, drag to rotate
+            {content.scene.pinchToZoom}
           </div>
         </div>
       </div>
+
+      {/* Visual Mode Info Modal */}
+      <VisualModeInfoModal
+        isOpen={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
+        locale={locale}
+      />
     </div>
   );
 }
@@ -2132,6 +1923,7 @@ function SceneOptionsPanel({
  * Shows all planets with their positions, just no orbital paths.
  */
 function SpinModeView({
+  showOrbits,
   showTrails,
   showBelts,
   showDistances,
@@ -2140,7 +1932,11 @@ function SpinModeView({
   preset,
   date,
   onPlanetClick,
+  showBirthMarker = false,
+  birthLatitude = 0,
+  birthLongitude = 0,
 }: {
+  showOrbits: boolean;
   showTrails: boolean;
   showBelts: boolean;
   showDistances: boolean;
@@ -2149,11 +1945,14 @@ function SpinModeView({
   preset: PresetName;
   date: Date;
   onPlanetClick?: (name: string) => void;
+  showBirthMarker?: boolean;
+  birthLatitude?: number;
+  birthLongitude?: number;
 }) {
-  // Reuse solar system but without orbit lines
+  // Reuse solar system with configurable orbit lines
   return (
     <SolarSystemWithOrbits
-      showOrbits={false}
+      showOrbits={showOrbits}
       showTrails={showTrails}
       showBelts={showBelts}
       showDistances={showDistances}
@@ -2162,6 +1961,9 @@ function SpinModeView({
       preset={preset}
       date={date}
       onPlanetClick={onPlanetClick}
+      showBirthMarker={showBirthMarker}
+      birthLatitude={birthLatitude}
+      birthLongitude={birthLongitude}
     />
   );
 }
@@ -2170,6 +1972,7 @@ function SpinModeView({
  * CMB mode view.
  */
 function CMBModeView({ latitude, longitude }: { latitude: number; longitude: number }) {
+  const content = useContent();
   const cmbDirection = useMemo(() => {
     const l = (264 * Math.PI) / 180;
     const b = (48 * Math.PI) / 180;
@@ -2199,7 +2002,9 @@ function CMBModeView({ latitude, longitude }: { latitude: number; longitude: num
         }
         center
       >
-        <div className="text-[8px] text-red-300/70 whitespace-nowrap">CMB Rest Frame</div>
+        <div className="text-[8px] text-red-300/70 whitespace-nowrap">
+          {content.scene.cmbRestFrame}
+        </div>
       </Html>
     </>
   );
@@ -2250,19 +2055,362 @@ function GalaxyOverview() {
 }
 
 /**
- * Default zoom level in "target radii" units.
- * This makes the target body fill a reasonable portion of the view.
+ * Camera controls UI component - joystick style like Google Earth.
  */
+function CameraControlsUI({
+  cameraRef,
+  visible,
+  minDistance,
+  maxDistance,
+  content,
+}: {
+  cameraRef: React.MutableRefObject<THREE.Camera | null>;
+  visible: boolean;
+  minDistance: number;
+  maxDistance: number;
+  content: ReturnType<typeof getAppContent>;
+}) {
+  // Track active controls for continuous press
+  const activeControls = useRef<Set<string>>(new Set());
+  const animationRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number>(0);
+
+  // Smooth animation speeds (per second)
+  const zoomSpeed = 2.4; // 240% per second (3x faster)
+  const rotateSpeed = Math.PI / 2; // 90 degrees per second
+
+  // Animation loop for smooth continuous movement
+  useEffect(() => {
+    const animate = (time: number) => {
+      const deltaTime = lastTimeRef.current ? (time - lastTimeRef.current) / 1000 : 0;
+      lastTimeRef.current = time;
+
+      const camera = cameraRef.current;
+      if (camera && activeControls.current.size > 0) {
+        const distance = camera.position.length();
+        let theta = Math.atan2(camera.position.x, camera.position.z);
+        let phi = Math.acos(Math.max(-1, Math.min(1, camera.position.y / distance)));
+        let newDistance = distance;
+
+        // Apply zoom
+        if (activeControls.current.has('zoomIn')) {
+          newDistance = distance * (1 - zoomSpeed * deltaTime);
+        }
+        if (activeControls.current.has('zoomOut')) {
+          newDistance = distance * (1 + zoomSpeed * deltaTime);
+        }
+        newDistance = Math.max(minDistance, Math.min(maxDistance, newDistance));
+
+        // Apply rotation
+        if (activeControls.current.has('left')) {
+          theta += rotateSpeed * deltaTime;
+        }
+        if (activeControls.current.has('right')) {
+          theta -= rotateSpeed * deltaTime;
+        }
+        if (activeControls.current.has('up')) {
+          phi = Math.max(0.1, phi - rotateSpeed * deltaTime);
+        }
+        if (activeControls.current.has('down')) {
+          phi = Math.min(Math.PI - 0.1, phi + rotateSpeed * deltaTime);
+        }
+
+        camera.position.set(
+          newDistance * Math.sin(phi) * Math.sin(theta),
+          newDistance * Math.cos(phi),
+          newDistance * Math.sin(phi) * Math.cos(theta)
+        );
+        camera.lookAt(0, 0, 0);
+      }
+
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [cameraRef, minDistance, maxDistance, zoomSpeed, rotateSpeed]);
+
+  // Handlers for press and release
+  const startControl = useCallback((control: string) => {
+    activeControls.current.add(control);
+  }, []);
+
+  const stopControl = useCallback((control: string) => {
+    activeControls.current.delete(control);
+  }, []);
+
+  const stopAllControls = useCallback(() => {
+    activeControls.current.clear();
+  }, []);
+
+  // Create button props for continuous press support
+  const createButtonProps = (control: string) => ({
+    onPointerDown: (e: React.PointerEvent) => {
+      e.preventDefault();
+      startControl(control);
+    },
+    onPointerUp: () => stopControl(control),
+    onPointerLeave: () => stopControl(control),
+    onPointerCancel: () => stopControl(control),
+    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+  });
+
+  // Clean up on unmount or when hidden
+  useEffect(() => {
+    if (!visible) {
+      stopAllControls();
+    }
+    return () => stopAllControls();
+  }, [visible, stopAllControls]);
+
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <div className="absolute bottom-[18px] sm:bottom-4 right-4 flex items-end gap-2 sm:gap-3">
+      {/* Joystick - circular d-pad */}
+      <div className="relative w-[72px] h-[72px] sm:w-24 sm:h-24">
+        {/* Outer ring */}
+        <div className="absolute inset-0 rounded-full bg-black/50 backdrop-blur-sm border border-white/20" />
+
+        {/* Direction buttons */}
+        <button
+          {...createButtonProps('up')}
+          className="absolute top-1 left-1/2 -translate-x-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 hover:bg-white/25 active:bg-white/40 text-white/60 hover:text-white flex items-center justify-center transition-all touch-none select-none"
+          aria-label={content.cameraControls.tiltUp}
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+          >
+            <path d="M18 15l-6-6-6 6" />
+          </svg>
+        </button>
+        <button
+          {...createButtonProps('down')}
+          className="absolute bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 hover:bg-white/25 active:bg-white/40 text-white/60 hover:text-white flex items-center justify-center transition-all touch-none select-none"
+          aria-label={content.cameraControls.tiltDown}
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        <button
+          {...createButtonProps('left')}
+          className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 hover:bg-white/25 active:bg-white/40 text-white/60 hover:text-white flex items-center justify-center transition-all touch-none select-none"
+          aria-label={content.cameraControls.rotateLeft}
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+        <button
+          {...createButtonProps('right')}
+          className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 hover:bg-white/25 active:bg-white/40 text-white/60 hover:text-white flex items-center justify-center transition-all touch-none select-none"
+          aria-label={content.cameraControls.rotateRight}
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+          >
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+
+        {/* Center space - kept for visual balance */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/5 border border-white/10" />
+      </div>
+
+      {/* Zoom slider - vertical */}
+      <div className="flex flex-col items-center gap-1 bg-black/50 backdrop-blur-sm rounded-full py-2 px-1 border border-white/20">
+        <button
+          {...createButtonProps('zoomIn')}
+          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/25 active:bg-white/40 text-white/60 hover:text-white flex items-center justify-center transition-all touch-none select-none"
+          aria-label={content.cameraControls.zoomIn}
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+        <div className="w-px h-6 sm:h-8 bg-white/20" />
+        <button
+          {...createButtonProps('zoomOut')}
+          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/25 active:bg-white/40 text-white/60 hover:text-white flex items-center justify-center transition-all touch-none select-none"
+          aria-label={content.cameraControls.zoomOut}
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <path d="M5 12h14" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /**
- * Zoom distance in "target radii" units, per preset.
- * Smaller = closer to planet, fills more of viewport.
+ * Camera bridge - captures camera ref from inside Canvas.
  */
-const ZOOM_RADII_BY_PRESET: Record<string, number> = {
-  schoolModel: 4, // Scholar: closer view, planet fills viewport
-  trueSizes: 4, // True Sizes: similar to Scholar
-  truePhysical: 3, // True Scale: very close since planets are tiny
+function CameraBridge({
+  cameraRef,
+}: {
+  cameraRef: React.MutableRefObject<THREE.Camera | null>;
+}) {
+  const { camera } = useThree();
+  useEffect(() => {
+    cameraRef.current = camera;
+  }, [camera, cameraRef]);
+  return null;
+}
+
+/**
+ * Canvas bridge - exposes the canvas element for screenshot capture.
+ */
+function CanvasBridge({
+  onCanvasReady,
+}: {
+  onCanvasReady?: (canvas: HTMLCanvasElement) => void;
+}) {
+  const { gl } = useThree();
+  useEffect(() => {
+    if (onCanvasReady && gl.domElement) {
+      onCanvasReady(gl.domElement);
+    }
+  }, [gl, onCanvasReady]);
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Camera Distance System
+// ---------------------------------------------------------------------------
+// Uses FOV geometry instead of arbitrary multipliers. Given a target screen
+// coverage (e.g., 35%), we compute the exact distance where the body's angular
+// size matches that fraction. Scales to any body without manual tuning.
+// ---------------------------------------------------------------------------
+
+const CAMERA_FOV_DEGREES = 50; // Must match Canvas fov
+
+/**
+ * Target screen coverage by preset.
+ * Higher value = body appears larger on screen.
+ */
+const SCREEN_COVERAGE_BY_PRESET: Record<PresetName, number> = {
+  schoolModel: 0.55, // 55% - planet fills good portion of screen
+  trueSizes: 0.55, // 55% - planet fills good portion of screen
+  truePhysical: 0.12, // 12% - zoomed out to show sun at horizon
+  planetRatio: 0.55, // Same as school model
+  explorer: 0.45, // Slightly smaller for exploration
+  massComparison: 0.55, // Same as school model
 };
-const DEFAULT_ZOOM_RADII = 5;
+
+/**
+ * Per-body coverage adjustment factor.
+ * Values > 1 push camera farther (show more context).
+ * Values < 1 bring camera closer (more detail).
+ */
+const BODY_COVERAGE_ADJUSTMENT: Record<string, number> = {
+  Sun: 0.7, // Closer to fill screen nicely
+  Saturn: 1.4, // Farther to show rings
+  Moon: 1.3, // Show Earth context
+  Jupiter: 1.1, // Slight adjustment for size
+  Uranus: 1.1, // Has rings too
+  Neptune: 1.0,
+  Mercury: 0.9, // Closer for small bodies
+  Venus: 1.0,
+  Earth: 1.0,
+  Mars: 0.9, // Closer for small bodies
+};
+
+/**
+ * Calculate camera distance using FOV-based formula.
+ * Ensures consistent screen coverage regardless of body size.
+ *
+ * @param bodyRadius - Radius of the celestial body in scene units
+ * @param fovDegrees - Camera field of view in degrees
+ * @param targetFraction - Desired fraction of screen height (0-1)
+ * @returns Camera distance in scene units
+ */
+function calculateCameraDistance(
+  bodyRadius: number,
+  fovDegrees: number,
+  targetFraction: number
+): number {
+  const fovRadians = (fovDegrees * Math.PI) / 180;
+  // Half angle for the target screen coverage
+  const halfAngle = (fovRadians * targetFraction) / 2;
+  // Distance where body's angular size equals target fraction
+  const distance = bodyRadius / Math.tan(halfAngle);
+  return Math.max(distance, 0.001);
+}
+
+/**
+ * Get optimal camera distance for a body in a given preset.
+ * Uses mathematical formula for consistent screen coverage.
+ */
+function getOptimalCameraDistance(
+  bodyRadius: number,
+  bodyName: string,
+  preset: PresetName
+): number {
+  const baseCoverage = SCREEN_COVERAGE_BY_PRESET[preset] || 0.35;
+  let adjustment = BODY_COVERAGE_ADJUSTMENT[bodyName] || 1.0;
+
+  // Mobile-specific adjustments for certain bodies in Scholar/True Sizes presets
+  // These bodies benefit from being zoomed out more on small screens
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+  if (isMobile && (preset === 'schoolModel' || preset === 'trueSizes')) {
+    if (bodyName === 'Sun') {
+      adjustment *= 2.0; // Zoom out 2x more for Sun
+    } else if (bodyName === 'Saturn') {
+      adjustment *= 1.8; // Zoom out more for Saturn to see rings
+    }
+  }
+
+  // Lower coverage = camera closer, so we divide by adjustment
+  const effectiveCoverage = baseCoverage / adjustment;
+
+  return calculateCameraDistance(bodyRadius, CAMERA_FOV_DEGREES, effectiveCoverage);
+}
 
 /**
  * Main scene content.
@@ -2271,18 +2419,21 @@ function SceneContent({
   mode,
   latitude,
   longitude,
+  showBirthMarker,
   selectedPlanet,
   onPlanetSelect,
   preset,
+  showOrbits,
   showTrails,
   showDistances,
   showBelts,
   showAxes,
   date,
 }: SceneProps & {
-  selectedPlanet: SelectedPlanet;
-  onPlanetSelect: (name: SelectedPlanet) => void;
+  selectedPlanet: SelectedBody;
+  onPlanetSelect: (name: SelectedBody) => void;
   preset: PresetName;
+  showOrbits: boolean;
   showTrails: boolean;
   showDistances: boolean;
   showBelts: boolean;
@@ -2291,8 +2442,8 @@ function SceneContent({
 }) {
   // Get planet data for radius and Sun direction calculation
   const { targetBodyRadius, sunDirection } = useMemo(() => {
-    const planets = getPlanetPositionsWithPreset(new Date(), preset);
-    const moon = getMoonPositionWithPreset(new Date(), preset);
+    const planets = getPlanetPositionsWithPreset(date, preset);
+    const moon = getMoonPositionWithPreset(date, preset);
     const earth = planets.find((p) => p.name === 'Earth');
     const sun = planets.find((p) => p.name === 'Sun');
 
@@ -2342,13 +2493,13 @@ function SceneContent({
       targetBodyRadius: target?.size || 0.25,
       sunDirection: sunDir,
     };
-  }, [selectedPlanet, preset]);
+  }, [selectedPlanet, preset, date]);
 
   // Handler for planet click (two-way binding)
   const handlePlanetClick = useCallback(
     (name: string) => {
       if (BODY_ORDER.includes(name as SelectedBody)) {
-        onPlanetSelect(name as SelectedPlanet);
+        onPlanetSelect(name as SelectedBody);
       }
     },
     [onPlanetSelect]
@@ -2363,42 +2514,50 @@ function SceneContent({
   const cameraConfig = useMemo(() => {
     // Spin and Orbit modes: view centered on selected body (at origin due to floating-origin)
     if (mode === 'spin' || mode === 'orbit') {
-      // Camera distance = zoomRadii * targetRadius
-      // Use preset-specific zoom for better framing
-      const zoomRadii = ZOOM_RADII_BY_PRESET[preset] || DEFAULT_ZOOM_RADII;
+      // Use mathematical formula for consistent screen coverage
+      const camDist = getOptimalCameraDistance(targetBodyRadius, selectedPlanet, preset);
 
-      // Minimum camera distance - smaller for True Scale to see tiny planets
-      const minCamDist = preset === 'truePhysical' ? 0.001 : 0.08;
-      const camDist = Math.max(targetBodyRadius * zoomRadii, minCamDist);
-
-      // Position camera to see the sunlit side of the planet
-      // Camera is placed between Sun and planet (slightly offset), looking at planet
-      if (selectedPlanet !== 'Sun') {
-        const [sx, , sz] = sunDirection;
-
-        // Camera position: in the Sun's direction from the planet, offset to the side and above
-        // This ensures we see the lit hemisphere
+      // True Scale: camera behind planet, looking toward sun
+      // Zoomed out so sun is visible at horizon, planet centered
+      if (preset === 'truePhysical' && selectedPlanet !== 'Sun') {
+        const [sx, _sy, sz] = sunDirection;
         return {
           position: [
-            sx * camDist * 0.7 + camDist * 0.3, // Toward Sun + offset right
-            camDist * 0.4, // Above
-            sz * camDist * 0.7 + camDist * 0.3, // Toward Sun + offset
+            -sx * camDist * 0.9,
+            camDist * 0.25, // Low elevation keeps sun near horizon
+            -sz * camDist * 0.9,
+          ] as [number, number, number],
+          lookAt: [0, 0, 0] as [number, number, number], // Planet stays centered
+          fov: CAMERA_FOV_DEGREES,
+          targetRadius: targetBodyRadius,
+        };
+      }
+
+      if (selectedPlanet !== 'Sun') {
+        // Other presets: standard view from above and to the side
+        const norm = Math.sqrt(0.6 * 0.6 + 0.5 * 0.5 + 0.6 * 0.6);
+        return {
+          position: [
+            (camDist * 0.6) / norm,
+            (camDist * 0.5) / norm,
+            (camDist * 0.6) / norm,
           ] as [number, number, number],
           lookAt: [0, 0, 0] as [number, number, number],
-          fov: 45,
+          fov: CAMERA_FOV_DEGREES,
           targetRadius: targetBodyRadius,
         };
       }
 
       // Sun selected: default angle
+      const norm = Math.sqrt(0.6 * 0.6 + 0.4 * 0.4 + 0.7 * 0.7);
       return {
-        position: [camDist * 0.6, camDist * 0.35, camDist * 0.75] as [
-          number,
-          number,
-          number,
-        ],
+        position: [
+          (camDist * 0.6) / norm,
+          (camDist * 0.4) / norm,
+          (camDist * 0.7) / norm,
+        ] as [number, number, number],
         lookAt: [0, 0, 0] as [number, number, number],
-        fov: 45,
+        fov: CAMERA_FOV_DEGREES,
         targetRadius: targetBodyRadius,
       };
     }
@@ -2437,9 +2596,38 @@ function SceneContent({
     return { near, far };
   }, [cameraConfig.targetRadius]);
 
+  // Dynamic camera zoom limits based on preset and target body
+  // Uses the mathematical approach: limits are based on screen coverage range
+  const cameraLimits = useMemo(() => {
+    const targetRadius = cameraConfig.targetRadius || 0.01;
+    // Min distance: body fills 80% of screen (very close)
+    const minDist = calculateCameraDistance(targetRadius, CAMERA_FOV_DEGREES, 0.8);
+
+    // Mobile devices get extra zoom out range for better overview
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const mobileMultiplier = isMobile ? 2.5 : 1;
+
+    // Max distance varies by preset
+    if (preset === 'truePhysical') {
+      // True Scale: can zoom out far for orbital context (+70% extra range)
+      const maxDist =
+        calculateCameraDistance(targetRadius, CAMERA_FOV_DEGREES, 0.01) * 1.7;
+      return {
+        minDistance: Math.max(minDist, 0.0001),
+        maxDistance: Math.max(maxDist, 85) * mobileMultiplier,
+      };
+    }
+    // Other modes: moderate zoom range
+    const maxDist = calculateCameraDistance(targetRadius, CAMERA_FOV_DEGREES, 0.03);
+    return {
+      minDistance: Math.max(minDist, 0.02),
+      maxDistance: Math.max(maxDist, 50) * mobileMultiplier,
+    };
+  }, [cameraConfig.targetRadius, preset]);
+
   return (
     <>
-      <ambientLight intensity={0.3} />
+      <ambientLight intensity={0.15} />
       {/* Stars with reduced depth to prevent shell artifacts at certain viewing angles */}
       <Stars
         radius={200}
@@ -2467,6 +2655,7 @@ function SceneContent({
       {/* SPIN MODE - Same as orbit but without orbit lines */}
       {mode === 'spin' && (
         <SpinModeView
+          showOrbits={showOrbits}
           showTrails={showTrails}
           showBelts={showBelts}
           showDistances={showDistances}
@@ -2475,13 +2664,16 @@ function SceneContent({
           preset={preset}
           date={date}
           onPlanetClick={handlePlanetClick}
+          showBirthMarker={showBirthMarker}
+          birthLatitude={latitude}
+          birthLongitude={longitude}
         />
       )}
 
       {/* ORBIT MODE - Solar system view with orbits */}
       {mode === 'orbit' && (
         <SolarSystemWithOrbits
-          showOrbits={true}
+          showOrbits={showOrbits}
           showTrails={showTrails}
           showBelts={showBelts}
           showDistances={showDistances}
@@ -2490,6 +2682,9 @@ function SceneContent({
           preset={preset}
           date={date}
           onPlanetClick={handlePlanetClick}
+          showBirthMarker={showBirthMarker}
+          birthLatitude={latitude}
+          birthLongitude={longitude}
         />
       )}
 
@@ -2503,14 +2698,9 @@ function SceneContent({
         enablePan={false}
         enableZoom={true}
         enableRotate={true}
-        // Semantic zoom limits: expressed in target radii
-        // minDistance: can zoom to 2x target radius (close surface view)
-        // maxDistance: can zoom out to 500x target radius (context view)
-        minDistance={Math.max(
-          (cameraConfig.targetRadius || 0.01) * 2,
-          cameraClipping.near * 2
-        )}
-        maxDistance={Math.max((cameraConfig.targetRadius || 0.01) * 500, 30)}
+        // Semantic zoom limits: uses computed limits that account for mobile
+        minDistance={cameraLimits.minDistance}
+        maxDistance={cameraLimits.maxDistance}
         autoRotate={false}
         autoRotateSpeed={0.15}
         target={cameraConfig.lookAt}
@@ -2530,23 +2720,6 @@ function SceneContent({
 }
 
 /**
- * Equatorial rotation speeds in km/h for each body.
- * Source: NASA Planetary Fact Sheets
- * https://nssdc.gsfc.nasa.gov/planetary/factsheet/
- */
-const ROTATION_SPEEDS_KMH: Record<string, number> = {
-  Sun: 7189, // At equator (~25 day period)
-  Mercury: 10.83, // Very slow rotation
-  Venus: 6.52, // Retrograde, very slow
-  Earth: 1674.4, // ~465 m/s at equator
-  Mars: 868.22, // Similar day length to Earth
-  Jupiter: 45583, // Fast rotation despite size
-  Saturn: 36840, // Also fast rotation
-  Uranus: 9320, // Tilted rotation
-  Neptune: 9719, // Similar to Uranus
-};
-
-/**
  * Get rotation velocity for a planet at given latitude.
  * Speed decreases with cos(latitude).
  */
@@ -2557,245 +2730,59 @@ function getRotationVelocityKmh(planet: string, latitudeDeg: number): number {
 }
 
 /**
- * Format date and time for display (local time).
- */
-function formatDateTime(date: Date): string {
-  return (
-    date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    }) +
-    ' ' +
-    date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })
-  );
-}
-
-/**
- * Date and time slider component for time travel through solar system history.
- * Displays local time to user, but Date object uses UTC internally for calculations.
- */
-function DateSlider({ date, onChange }: { date: Date; onChange: (d: Date) => void }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  // Date range: 1900 to 2100
-  const minDate = new Date('1900-01-01T00:00:00');
-  const maxDate = new Date('2100-12-31T23:59:59');
-  const minTime = minDate.getTime();
-  const maxTime = maxDate.getTime();
-
-  const sliderValue = date.getTime();
-
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTime = parseInt(e.target.value, 10);
-    onChange(new Date(newTime));
-  };
-
-  const handleDateInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Preserve the current time when changing date
-    const [year, month, day] = e.target.value.split('-').map(Number);
-    const newDate = new Date(date);
-    newDate.setFullYear(year, month - 1, day);
-    if (!isNaN(newDate.getTime())) {
-      onChange(newDate);
-    }
-  };
-
-  const handleTimeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const [hours, minutes] = e.target.value.split(':').map(Number);
-    const newDate = new Date(date);
-    newDate.setHours(hours, minutes, 0, 0);
-    if (!isNaN(newDate.getTime())) {
-      onChange(newDate);
-    }
-  };
-
-  const setNow = () => onChange(new Date());
-
-  // Format for date input (YYYY-MM-DD)
-  const dateInputValue = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  // Format for time input (HH:MM)
-  const timeInputValue = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-
-  return (
-    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-      {/* Date/time display button */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20 hover:bg-black/80 transition-colors flex items-center gap-2"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          className="text-white/60"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-        <span className="text-white text-sm font-medium">{formatDateTime(date)}</span>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          className={`text-white/60 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </button>
-
-      {/* Expanded slider panel */}
-      {isExpanded && (
-        <div className="bg-black/80 backdrop-blur-sm px-4 py-3 rounded-lg border border-white/20 flex flex-col gap-3 min-w-[340px]">
-          {/* Year slider */}
-          <div className="flex flex-col gap-1">
-            <div className="text-[9px] text-white/40 uppercase tracking-wider">Year</div>
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] text-white/50 w-8">1900</span>
-              <input
-                type="range"
-                min={minTime}
-                max={maxTime}
-                value={sliderValue}
-                onChange={handleSliderChange}
-                className="flex-1 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-blue-500"
-              />
-              <span className="text-[10px] text-white/50 w-8">2100</span>
-            </div>
-          </div>
-
-          {/* Date and time inputs */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 flex flex-col gap-1">
-              <div className="text-[9px] text-white/40 uppercase tracking-wider">
-                Date
-              </div>
-              <input
-                type="date"
-                value={dateInputValue}
-                onChange={handleDateInput}
-                className="w-full bg-white/10 border border-white/20 rounded px-2 py-1.5 text-white text-sm outline-none focus:border-blue-400"
-              />
-            </div>
-            <div className="w-24 flex flex-col gap-1">
-              <div className="text-[9px] text-white/40 uppercase tracking-wider">
-                Time
-              </div>
-              <input
-                type="time"
-                value={timeInputValue}
-                onChange={handleTimeInput}
-                className="w-full bg-white/10 border border-white/20 rounded px-2 py-1.5 text-white text-sm outline-none focus:border-blue-400"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <div className="text-[9px] text-white/40 uppercase tracking-wider">
-                &nbsp;
-              </div>
-              <button
-                onClick={setNow}
-                className="px-3 py-1.5 bg-blue-500/30 hover:bg-blue-500/50 border border-blue-400/50 rounded text-blue-300 text-xs transition-colors whitespace-nowrap"
-              >
-                Now
-              </button>
-            </div>
-          </div>
-
-          {/* Description and exploration hint */}
-          <div className="flex flex-col gap-1.5 pt-1 border-t border-white/10">
-            <div className="text-[9px] text-blue-300/70 text-center flex items-center justify-center gap-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4" />
-                <path d="M12 8h.01" />
-              </svg>
-              Change the date to see the solar system at that moment
-            </div>
-            <div className="text-[9px] text-white/30 text-center">
-              Local time shown. Calculations use UTC ({date.toISOString().slice(0, 19)}Z)
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Exploration hint below date picker */}
-      {!isExpanded && (
-        <div className="text-[9px] text-white/40 text-center flex items-center gap-1.5 bg-black/40 px-3 py-1.5 rounded-full">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="10"
-            height="10"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M15 3h6v6" />
-            <path d="M10 14 21 3" />
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-          </svg>
-          <span className="hidden sm:inline">
-            Click any planet to explore. Scroll to zoom.
-          </span>
-          <span className="sm:hidden">Tap planets. Pinch to zoom.</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
  * Get speed info based on mode and selected planet.
  */
 function getSpeedInfo(
   mode: ReferenceFrame,
-  selectedPlanet: SelectedPlanet,
-  latitude: number = 0
+  selectedPlanet: SelectedBody,
+  latitude: number = 0,
+  content: ReturnType<typeof getAppContent>
 ): { speed: number; unit: string; label: string; color: string } {
   const planetInfo = PLANET_INFO[selectedPlanet];
   const orbitalSpeed = ORBITAL_VELOCITIES[selectedPlanet];
+
+  const planetName =
+    content.planets[selectedPlanet as keyof typeof content.planets] || planetInfo.label;
+
+  // Use template strings with {planet} placeholder for proper word order in each language
+  const spinLabel = content.planetInfo.spinLabel
+    ? content.planetInfo.spinLabel.replace('{planet}', planetName)
+    : `${planetName} ${content.planetInfo.rotation}`;
+  const orbitLabel = content.planetInfo.orbitLabel
+    ? content.planetInfo.orbitLabel.replace('{planet}', planetName)
+    : `${planetName} ${content.planetInfo.orbit}`;
 
   switch (mode) {
     case 'spin':
       return {
         speed: getRotationVelocityKmh(selectedPlanet, latitude),
-        unit: 'km/h',
-        label: `${planetInfo.label} Rotation`,
+        unit: content.units.kmh,
+        label: spinLabel,
         color: planetInfo.color,
       };
     case 'orbit':
       return {
         speed: orbitalSpeed,
-        unit: 'km/s',
-        label: `${planetInfo.label} Orbit`,
+        unit: content.units.kms,
+        label: orbitLabel,
         color: planetInfo.color,
       };
     case 'galaxy':
-      return { speed: 220, unit: 'km/s', label: 'Galactic Orbit', color: '#cc88ff' };
+      return {
+        speed: 220,
+        unit: content.units.kms,
+        label: content.planetInfo.galacticOrbit,
+        color: '#cc88ff',
+      };
     case 'cmb':
-      return { speed: 369.82, unit: 'km/s', label: 'CMB Motion', color: '#ff6b6b' };
+      return {
+        speed: 369.82,
+        unit: content.units.kms,
+        label: content.planetInfo.cmbMotion,
+        color: '#ff6b6b',
+      };
     default:
-      return { speed: 0, unit: 'km/s', label: '', color: '#ffffff' };
+      return { speed: 0, unit: content.units.kms, label: '', color: '#ffffff' };
   }
 }
 
@@ -2810,129 +2797,413 @@ const CAMERA_CONFIG = {
   near: 1e-6,
   far: 100,
 };
-const GL_CONFIG = { antialias: true, alpha: true, logarithmicDepthBuffer: true };
+const GL_CONFIG = {
+  antialias: true,
+  alpha: true,
+  logarithmicDepthBuffer: true,
+  preserveDrawingBuffer: true,
+};
 const SHADOW_CONFIG = { enabled: true, type: THREE.PCFSoftShadowMap } as const;
 
-export default function Scene({ mode, latitude, longitude = 0 }: SceneProps) {
-  const [selectedPlanet, setSelectedPlanet] = useState<SelectedPlanet>('Earth');
+export default function Scene({
+  mode,
+  latitude,
+  longitude = 0,
+  birthDate = null,
+  showBirthMarker = false,
+  onEditBirthData,
+  birthPlaceName = null,
+  onReady,
+  onCanvasReady,
+  sceneRef,
+}: SceneProps) {
+  const { locale, setLocale } = useLocaleContext();
+  const content = getAppContent(locale);
+  const [selectedPlanet, setSelectedBody] = useState<SelectedBody>('Earth');
   const [preset, setPreset] = useState<PresetName>('schoolModel');
+  const [showOrbits, setShowOrbits] = useState(true); // Show orbit paths
   const [showTrails, setShowTrails] = useState(true);
   const [showDistances, setShowDistances] = useState(false);
   const [showBelts, setShowBelts] = useState(false);
   const [showAxes, setShowAxes] = useState(true); // Show rotation axes by default
-  // Initialize viewDate directly - this is a client component so Date() is safe
-  const [viewDate, setViewDate] = useState<Date>(() => new Date());
-  const [isLiveTime, setIsLiveTime] = useState(true);
-  const speedInfo = getSpeedInfo(mode, selectedPlanet, latitude);
+  const [showControls, setShowControls] = useState(true); // Show camera controls by default
+  const [showMobileSettings, setShowMobileSettings] = useState(false); // Mobile settings sheet
+  // Initialize viewDate to null to avoid hydration mismatch, set on client mount
+  const [viewDate, setViewDate] = useState<Date | null>(null);
+  const [isLiveTime, setIsLiveTime] = useState(!birthDate); // Start live only if no birth date
+  // Track which view mode: 'live', 'birth', or 'custom' - default to 'birth' if birthDate exists
+  const [viewMode, setViewMode] = useState<DateSliderViewMode>(
+    birthDate ? 'birth' : 'live'
+  );
+  const speedInfo = getSpeedInfo(mode, selectedPlanet, latitude, content);
+  const cameraRef = useRef<THREE.Camera | null>(null);
 
-  // Live time updates - only reacts to isLiveTime changes
+  // Expose methods for external control (e.g., for share preparation)
   useEffect(() => {
-    if (!isLiveTime) return;
+    if (sceneRef && 'current' in sceneRef) {
+      (sceneRef as React.MutableRefObject<SceneHandle | null>).current = {
+        prepareForShare: () => {
+          let needsUpdate = false;
+
+          // Force School Model preset for consistent share appearance
+          if (preset !== 'schoolModel') {
+            setPreset('schoolModel');
+            needsUpdate = true;
+          }
+
+          // Focus on Earth if not already selected
+          if (selectedPlanet !== 'Earth') {
+            setSelectedBody('Earth');
+            needsUpdate = true;
+          }
+
+          // Set date to birth date if available and not already viewing birth
+          if (birthDate && viewMode !== 'birth') {
+            setViewDate(birthDate);
+            setViewMode('birth');
+            setIsLiveTime(false);
+            needsUpdate = true;
+          }
+
+          return needsUpdate;
+        },
+      };
+    }
+    return () => {
+      if (sceneRef && 'current' in sceneRef) {
+        (sceneRef as React.MutableRefObject<SceneHandle | null>).current = null;
+      }
+    };
+  }, [sceneRef, birthDate, selectedPlanet, viewMode, preset]);
+
+  // Compute camera zoom limits based on preset and selected planet
+  // This needs to be in Scene component since CameraControlsUI is rendered here
+  // Uses the mathematical approach: limits are based on screen coverage range
+  const cameraLimits = useMemo(() => {
+    // Get approximate body radius for the selected planet
+    const planets = getPlanetPositionsWithPreset(new Date(), preset);
+    const moon = getMoonPositionWithPreset(new Date(), preset);
+
+    let targetRadius = 0.25; // default
+    if (selectedPlanet === 'Moon') {
+      targetRadius = moon.size;
+    } else {
+      const target = planets.find((p) => p.name === selectedPlanet);
+      if (target) targetRadius = target.size;
+    }
+
+    // Min distance: body fills 80% of screen (very close)
+    const minDist = calculateCameraDistance(targetRadius, CAMERA_FOV_DEGREES, 0.8);
+
+    // Mobile devices get extra zoom out range for better overview
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const mobileMultiplier = isMobile ? 2.5 : 1;
+
+    if (preset === 'truePhysical') {
+      // True Scale: can zoom out far for orbital context (+70% extra range)
+      const maxDist =
+        calculateCameraDistance(targetRadius, CAMERA_FOV_DEGREES, 0.01) * 1.7;
+      return {
+        minDistance: Math.max(minDist, 0.0001),
+        maxDistance: Math.max(maxDist, 85) * mobileMultiplier,
+      };
+    }
+    // Other modes: moderate zoom range
+    const maxDist = calculateCameraDistance(targetRadius, CAMERA_FOV_DEGREES, 0.03);
+    return {
+      minDistance: Math.max(minDist, 0.02),
+      maxDistance: Math.max(maxDist, 50) * mobileMultiplier,
+    };
+  }, [preset, selectedPlanet]);
+
+  // Track previous birthDate to detect changes
+  const prevBirthDateRef = useRef<Date | null | undefined>(undefined);
+
+  // Initialize date on client mount - default to birth date if available
+  useEffect(() => {
+    if (viewDate === null) {
+      // If birth date is set and valid, show the solar system at birth
+      if (birthDate && birthDate.getTime() <= Date.now()) {
+        setViewDate(birthDate);
+        setViewMode('birth');
+        setIsLiveTime(false);
+      } else {
+        setViewDate(new Date());
+        setViewMode('live');
+        setIsLiveTime(true);
+      }
+      // Only set prev ref on initial mount
+      prevBirthDateRef.current = birthDate;
+    }
+  }, [birthDate, viewDate]);
+
+  // When birthDate changes (user sets/edits), jump to the new birth date
+  useEffect(() => {
+    // Skip on initial render (prevBirthDateRef is undefined)
+    if (prevBirthDateRef.current === undefined) return;
+
+    // If birthDate changed and is valid, jump to it
+    if (birthDate && birthDate.getTime() !== prevBirthDateRef.current?.getTime()) {
+      setViewDate(birthDate);
+      setViewMode('birth');
+      setIsLiveTime(false);
+    }
+    // Always update ref after comparison
+    prevBirthDateRef.current = birthDate;
+  }, [birthDate]);
+
+  // Handle live time updates
+  useEffect(() => {
+    if (!isLiveTime || viewMode !== 'live') return;
 
     const interval = setInterval(() => {
       setViewDate(new Date());
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isLiveTime]);
+  }, [isLiveTime, viewMode]);
 
-  // Handle manual date changes - stop live updates
-  const handleDateChange = useCallback((newDate: Date) => {
-    const now = new Date();
-    const diff = Math.abs(now.getTime() - newDate.getTime());
-    // If within 2 seconds of now, consider it "live"
-    if (diff < 2000) {
-      setIsLiveTime(true);
-    } else {
+  // Handle manual date changes
+  const handleDateChange = useCallback(
+    (newDate: Date) => {
+      const now = new Date();
+      const diff = Math.abs(now.getTime() - newDate.getTime());
+      // If within 2 seconds of now, consider it "live"
+      if (diff < 2000) {
+        setIsLiveTime(true);
+        setViewMode('live');
+      } else if (birthDate && Math.abs(newDate.getTime() - birthDate.getTime()) < 2000) {
+        // If within 2 seconds of birth date, snap to birth
+        setIsLiveTime(false);
+        setViewMode('birth');
+      } else {
+        setIsLiveTime(false);
+        setViewMode('custom');
+      }
+      setViewDate(newDate);
+    },
+    [birthDate]
+  );
+
+  // Quick jump to birth date
+  const jumpToBirthDate = useCallback(() => {
+    if (birthDate) {
+      setViewDate(birthDate);
+      setViewMode('birth');
       setIsLiveTime(false);
     }
-    setViewDate(newDate);
+  }, [birthDate]);
+
+  // Quick jump to now
+  const jumpToNow = useCallback(() => {
+    setViewDate(new Date());
+    setViewMode('live');
+    setIsLiveTime(true);
   }, []);
 
-  return (
-    <RenderProfileProvider initialFidelity="standard" initialAnimation="subtle">
-      <div className="w-full h-full relative">
-        <Canvas
-          key="worldline-canvas"
-          camera={CAMERA_CONFIG}
-          className="w-full h-full"
-          gl={GL_CONFIG}
-          shadows={SHADOW_CONFIG}
-        >
-          <color attach="background" args={['#050508']} />
-          <Suspense fallback={null}>
-            <SceneContent
-              mode={mode}
-              latitude={latitude}
-              longitude={longitude}
-              selectedPlanet={selectedPlanet}
-              onPlanetSelect={setSelectedPlanet}
-              preset={preset}
-              showTrails={showTrails}
-              showDistances={showDistances}
-              showBelts={showBelts}
-              showAxes={showAxes}
-              date={viewDate}
-            />
-          </Suspense>
-        </Canvas>
+  // Don't render canvas until client-side date is initialized (prevents hydration mismatch)
+  // Page-level loading screen handles the UI during this time
+  if (viewDate === null) {
+    return null;
+  }
 
-        {/*
+  return (
+    <ContentContext.Provider value={content}>
+      <RenderProfileProvider initialFidelity="standard" initialAnimation="subtle">
+        <div className="w-full h-full relative">
+          <Canvas
+            key="worldline-canvas"
+            camera={CAMERA_CONFIG}
+            className="w-full h-full"
+            gl={GL_CONFIG}
+            shadows={SHADOW_CONFIG}
+          >
+            <color attach="background" args={['#050508']} />
+            {/* Track loading progress - outside Suspense so it runs while children load */}
+            {onReady && <SceneLoadingTracker onReady={onReady} />}
+            <Suspense fallback={null}>
+              <CameraBridge cameraRef={cameraRef} />
+              {onCanvasReady && <CanvasBridge onCanvasReady={onCanvasReady} />}
+              <SceneContent
+                mode={mode}
+                latitude={latitude}
+                longitude={longitude}
+                showBirthMarker={showBirthMarker && viewMode === 'birth'}
+                selectedPlanet={selectedPlanet}
+                onPlanetSelect={setSelectedBody}
+                preset={preset}
+                showOrbits={showOrbits}
+                showTrails={showTrails}
+                showDistances={showDistances}
+                showBelts={showBelts}
+                showAxes={showAxes}
+                date={viewDate}
+              />
+            </Suspense>
+          </Canvas>
+
+          {/*
         Scene-internal overlay layer.
         z-50 places overlays above Canvas but below SceneShell's overlay layer (z-100).
         pointer-events-none allows clicks to pass through to the canvas.
         Individual UI elements have pointer-events-auto.
       */}
-        <div className="absolute inset-0 z-50 pointer-events-none">
-          {/* Speed HUD - top right */}
-          <div className="pointer-events-auto">
-            <SpeedHUD {...speedInfo} />
+          <div className="absolute inset-0 z-50 pointer-events-none">
+            {/* App title - top center, mobile only (desktop uses page.tsx overlay) */}
+            <div className="sm:hidden absolute top-3 left-1/2 -translate-x-1/2">
+              <SpacetimeTitle size="sm" withBox />
+            </div>
+
+            {/* Language switcher - top left corner (desktop only) */}
+            <div className="pointer-events-auto absolute top-3 left-3 z-[100] hidden sm:block">
+              <LanguageSwitcher locale={locale} onLocaleChange={setLocale} />
+            </div>
+
+            {/* Speed HUD - top right (desktop only) */}
+            <div className="pointer-events-auto hidden sm:block">
+              <SpeedHUD {...speedInfo} />
+            </div>
+
+            {/* Scene options panel - top left, below title (desktop only) */}
+            {(mode === 'orbit' || mode === 'spin') && (
+              <div className="pointer-events-auto hidden sm:block">
+                <SceneOptionsPanel
+                  preset={preset}
+                  onPresetChange={setPreset}
+                  showOrbits={showOrbits}
+                  onShowOrbitsChange={setShowOrbits}
+                  showTrails={showTrails}
+                  onShowTrailsChange={setShowTrails}
+                  showDistances={showDistances}
+                  onShowDistancesChange={setShowDistances}
+                  showBelts={showBelts}
+                  onShowBeltsChange={setShowBelts}
+                  showAxes={showAxes}
+                  onShowAxesChange={setShowAxes}
+                  showControls={showControls}
+                  onShowControlsChange={setShowControls}
+                  locale={locale}
+                />
+              </div>
+            )}
+
+            {/* Planet selector - top right, below speed HUD (desktop only) */}
+            {(mode === 'orbit' || mode === 'spin') && (
+              <div className="pointer-events-auto absolute top-24 right-4 z-[100] hidden sm:block">
+                <PlanetSelector
+                  selected={selectedPlanet}
+                  onChange={setSelectedBody}
+                  viewDate={viewDate}
+                  locale={locale}
+                />
+              </div>
+            )}
+
+            {/* Date slider - bottom center (desktop only) */}
+            {(mode === 'orbit' || mode === 'spin') && (
+              <div className="pointer-events-auto absolute bottom-20 left-1/2 -translate-x-1/2 flex-col items-center gap-2 hidden sm:flex">
+                <DateSlider
+                  date={viewDate}
+                  onChange={handleDateChange}
+                  birthDate={birthDate}
+                  viewMode={viewMode}
+                  onJumpToBirth={birthDate ? jumpToBirthDate : undefined}
+                  onJumpToNow={jumpToNow}
+                  onEditBirthData={onEditBirthData}
+                  birthPlaceName={birthPlaceName}
+                  locale={locale}
+                />
+                {/* Exploration hint */}
+                <div className="flex text-[9px] text-white/40 text-center items-center gap-1.5 bg-black/40 px-3 py-1.5 rounded-full">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M15 3h6v6" />
+                    <path d="M10 14 21 3" />
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  </svg>
+                  {content.scene.clickToExplore}
+                </div>
+              </div>
+            )}
+
+            {/* Scale note - bottom left corner (desktop only) */}
+            {(mode === 'orbit' || mode === 'spin' || mode === 'galaxy') && (
+              <div className="absolute bottom-20 left-4 text-[8px] text-neutral-500 hidden sm:block">
+                {content.scene.ephemerisNote}
+              </div>
+            )}
+
+            {/* Camera controls - bottom right (desktop only) */}
+            {(mode === 'orbit' || mode === 'spin') && (
+              <div className="pointer-events-auto hidden sm:block">
+                <CameraControlsUI
+                  cameraRef={cameraRef}
+                  visible={showControls}
+                  minDistance={cameraLimits.minDistance}
+                  maxDistance={cameraLimits.maxDistance}
+                  content={content}
+                />
+              </div>
+            )}
+
+            {/* Mobile Settings FAB - bottom right (mobile only) */}
+            {/* Using bottom-24 (96px) to clear iOS Safari navigation bar */}
+            <div className="sm:hidden pointer-events-auto absolute bottom-24 right-4">
+              <button
+                onClick={() => setShowMobileSettings(true)}
+                className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors shadow-lg"
+                aria-label={content.scene.settings}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Mobile touch hint - positioned above FAB */}
+            <div className="sm:hidden pointer-events-none absolute bottom-40 left-1/2 -translate-x-1/2">
+              <div className="text-[10px] text-white/40 text-center bg-black/40 px-3 py-1.5 rounded-full">
+                {content.scene.pinchToZoom}
+              </div>
+            </div>
           </div>
 
-          {/* Scene options panel - top left, below title */}
-          {(mode === 'orbit' || mode === 'spin') && (
-            <div className="pointer-events-auto">
-              <SceneOptionsPanel
-                preset={preset}
-                onPresetChange={setPreset}
-                showTrails={showTrails}
-                onShowTrailsChange={setShowTrails}
-                showDistances={showDistances}
-                onShowDistancesChange={setShowDistances}
-                showBelts={showBelts}
-                onShowBeltsChange={setShowBelts}
-                showAxes={showAxes}
-                onShowAxesChange={setShowAxes}
-              />
-            </div>
-          )}
-
-          {/* Planet selector - moved to top right, below speed HUD */}
-          {(mode === 'orbit' || mode === 'spin') && (
-            <div className="pointer-events-auto absolute top-24 right-4">
-              <PlanetSelector
-                selected={selectedPlanet}
-                onChange={setSelectedPlanet}
-                viewDate={viewDate}
-              />
-            </div>
-          )}
-
-          {/* Date slider - bottom center, above mode selector */}
-          {(mode === 'orbit' || mode === 'spin') && (
-            <div className="pointer-events-auto">
-              <DateSlider date={viewDate} onChange={handleDateChange} />
-            </div>
-          )}
-
-          {/* Scale note - bottom left corner */}
-          {(mode === 'orbit' || mode === 'spin' || mode === 'galaxy') && (
-            <div className="absolute bottom-20 left-4 text-[8px] text-neutral-500 hidden sm:block">
-              Ephemerides: Astronomy Engine (VSOP87)
-            </div>
-          )}
+          {/* Mobile Settings Sheet */}
+          <MobileSettingsSheet
+            isOpen={showMobileSettings}
+            onClose={() => setShowMobileSettings(false)}
+            focusedPlanet={selectedPlanet}
+            onPlanetSelect={setSelectedBody}
+            preset={preset}
+            onPresetChange={setPreset}
+            showOrbits={showOrbits}
+            onShowOrbitsChange={setShowOrbits}
+            showTrails={showTrails}
+            onShowTrailsChange={setShowTrails}
+            locale={locale}
+            onLocaleChange={setLocale}
+            birthDate={birthDate}
+            birthPlaceName={birthPlaceName}
+            onEditBirthData={onEditBirthData}
+          />
         </div>
-      </div>
-    </RenderProfileProvider>
+      </RenderProfileProvider>
+    </ContentContext.Provider>
   );
 }

@@ -1,0 +1,325 @@
+{
+  "meta": {
+    "title": "Kosmisk rejse",
+    "description": "Din bevaegelse gennem kosmos",
+    "keywords": "rumtid, kosmisk rejse, solsystem, astronomi, fysik, univers, planeter, kredsloebsbevaegelse, rumvisualisering"
+  },
+  "header": {
+    "title": "Kosmisk rejse",
+    "subtitle": "Din bevaegelse gennem kosmos"
+  },
+  "onboarding": {
+    "title": "Din kosmiske rejse",
+    "description": "Indtast din foedselsdato for at opdage, hvor langt du har rejst gennem kosmos.",
+    "birthDate": "Foedselsdato",
+    "birthTime": "Foedselstidspunkt",
+    "birthLocation": "Foedested",
+    "addTime": "Tilfoej foedselstidspunkt (valgfrit)",
+    "addLocation": "Tilfoej foedested (valgfrit)",
+    "removeTime": "Fjern",
+    "removeLocation": "Fjern",
+    "searchPlace": "Soeg efter by eller sted...",
+    "useCurrentLocation": "Brug min nuvaerende placering",
+    "locationSet": "Placering angivet",
+    "journeyBegan": "Din kosmiske rejse begyndte den",
+    "skip": "Spring over, udforsk foerst",
+    "skipMobile": "Spring over",
+    "beginJourney": "Begynd rejsen",
+    "clearData": "Slet gemte foedselsdata",
+    "privacy": "Alle beregninger koerer lokalt. Dine data forlader aldrig din browser.",
+    "month": "Maaned",
+    "day": "Dag",
+    "year": "Aar",
+    "hour": "Time",
+    "minute": "Minut",
+    "months": [
+      "Januar",
+      "Februar",
+      "Marts",
+      "April",
+      "Maj",
+      "Juni",
+      "Juli",
+      "August",
+      "September",
+      "Oktober",
+      "November",
+      "December"
+    ],
+    "validation": {
+      "yearFuture": "Aaret kan ikke vaere i fremtiden",
+      "yearPast": "Aaret skal vaere 1900 eller senere",
+      "invalidDay": "Ugyldig dag for den valgte maaned"
+    }
+  },
+  "journey": {
+    "button": "Din kosmiske rejse",
+    "buttonMobile": "Din rejse",
+    "tooltip": "Se din kosmiske rejse (J)"
+  },
+  "dateSlider": {
+    "viewModes": {
+      "live": "Nu",
+      "birth": "Din foedsel",
+      "custom": "Brugerdefineret"
+    },
+    "year": "Aar",
+    "jumpTo": "Gaa til:",
+    "date": "Dato",
+    "time": "Tid",
+    "viewingAt": "Viser dette oejeblik i tiden",
+    "localTime": "Lokal tid. UTC:",
+    "editBirthData": "Aendr foedselsdato, tid og sted",
+    "addBirthDate": "Tilfoej din foedselsdato",
+    "dataSaved": "Data gemt lokalt. Intet sendt til servere."
+  },
+  "scene": {
+    "clickToExplore": "Klik på en planet for at udforske. Scroll for at zoome.",
+    "loading": "Indlæser...",
+    "settings": "Indstillinger",
+    "display": "Visning",
+    "orbitPaths": "Omløbsbaner",
+    "orbitalTrails": "Omløbsspor",
+    "distanceAU": "Afstand (AU)",
+    "asteroidBelts": "Asteroidebælter",
+    "rotationAxis": "Rotationsakse",
+    "cameraControls": "Kamerastyring",
+    "pinchToZoom": "Knib for at zoome, træk for at rotere",
+    "galacticCenter": "Galaktisk centrum",
+    "cmbRestFrame": "CMB-hvileramme",
+    "ephemerisNote": "Efemerider: Astronomy Engine (VSOP87)",
+    "noPlacesFound": "Ingen steder fundet",
+    "presets": {
+      "schoolModel": {
+        "label": "Skolemodel",
+        "description": "Komprimerede størrelser og afstande",
+        "note": "Bedst til overblik"
+      },
+      "trueSizes": {
+        "label": "Ægte Størrelse",
+        "description": "Ægte relative planetstørrelser",
+        "note": "Logaritmiske afstande"
+      },
+      "truePhysical": {
+        "label": "Ægte Skala",
+        "description": "Geometrisk nøjagtig",
+        "note": "Ægte størrelser og afstande"
+      }
+    }
+  },
+  "planets": {
+    "Sun": "Solen",
+    "Mercury": "Merkur",
+    "Venus": "Venus",
+    "Earth": "Jorden",
+    "Moon": "Maanen",
+    "Mars": "Mars",
+    "Jupiter": "Jupiter",
+    "Saturn": "Saturn",
+    "Uranus": "Uranus",
+    "Neptune": "Neptun"
+  },
+  "planetTypes": {
+    "Star": "Stjerne",
+    "Rocky": "Stenet",
+    "Gas Giant": "Gaskæmpe",
+    "Ice Giant": "Iskæmpe",
+    "Moon": "Maane"
+  },
+  "planetInfo": {
+    "distance": "Afstand",
+    "lightTime": "Lystid",
+    "orbitalSpeed": "Omloebshastighed",
+    "rotationSpeed": "Rotationshastighed",
+    "moonPhase": "Maanefase",
+    "rotation": "Rotation",
+    "orbit": "Omloeb",
+    "spinLabel": "{planet} rotation",
+    "orbitLabel": "{planet} kredsloeb",
+    "galacticOrbit": "Galaktisk omloeb",
+    "cmbMotion": "CMB-bevaegelse",
+    "light": "lys",
+    "season": "Aarstid",
+    "phase": "Fase",
+    "spin": "Spin",
+    "dist": "Afst",
+    "mass": "Masse",
+    "size": "Stoerrelse",
+    "center": "Centrum",
+    "more": "Mere",
+    "less": "Mindre",
+    "moon": "maane",
+    "moons": "maaner",
+    "dayOrbit": "d omloeb",
+    "yearOrbit": "aar omloeb",
+    "xEarth": "x Jorden"
+  },
+  "seasons": {
+    "modalTitle": "Hvorfor aarstider er modsatte",
+    "modalSubtitle": "Jordens 23,5 graders aksiale haeldning",
+    "northern": "Nordlige",
+    "southern": "Sydlige",
+    "Spring": "Foraar",
+    "Summer": "Sommer",
+    "Autumn": "Efteraar",
+    "Winter": "Vinter",
+    "explanation": {
+      "title1": "Haeldningen skaber aarstider",
+      "description1": "Jordens akse er tiltet 23,5 grader i forhold til dens bane omkring Solen. Denne haeldning forbliver konstant, mens Jorden kredser, og peger altid mod det samme punkt i rummet (naer Polaris).",
+      "title2": "Direkte vs. vinklet sollys",
+      "description2": "Naar en halvkugle halder mod Solen, rammer sollyset mere direkte (koncentreret energi = varmere). Naar den halder vaek, rammer sollyset i en lav vinkel (spredt ud = koeldere).",
+      "title3": "Altid modsatte",
+      "description3": "Naar den nordlige halvkugle halder mod Solen (juni), halder den sydlige halvkugle vaek. Seks maaneder senere (december) er det omvendt. Derfor er aarstiderne altid modsatte."
+    },
+    "funFact": "Sjov fakta: Uden haeldningen ville der ikke vaere nogen aarstider! Dagene ville altid vaere lige lange overalt.",
+    "notAboutDistance": "Ikke om afstand",
+    "notAboutDistanceDesc": "En almindelig misforstaaelse er, at aarstider skyldes, at Jorden er taettere paa eller laengere vaek fra Solen. Faktisk er Jorden taettest paa Solen i januar (nordlig vinter)! Den ca. 3% afstandsvariation har minimal effekt sammenlignet med sollyseets vinkel.",
+    "gotIt": "Forstaaet"
+  },
+  "visualModes": {
+    "title": "Visuelle tilstande",
+    "subtitle": "Forstaelse af kosmisk skala",
+    "understandingCosmicScale": "Forstaelse af kosmisk skala",
+    "whyVisualizationModes": "Hvorfor vi har brug for forskellige visualiseringstilstande",
+    "visualizationChallenge": "Visualiseringsudfordringen",
+    "visualizationChallengeDesc": "Hvis Solen var en <basketball>basketball</basketball>, ville Jorden vaere et sandkorn <highlight>26 meter vaek</highlight>. Neptun? Naesten <highlight>en kilometer</highlight>. Ingen skaerm kan vise den sande skala.",
+    "threeModes": "Tre tilstande",
+    "scholar": {
+      "name": "Laerd",
+      "tag": "Uddannelsesmaessig",
+      "description": "Logaritmisk skalering viser alle planeter paa skaermen. Perfekt til at laere omloebspositioner."
+    },
+    "trueSizes": {
+      "name": "Sand stoerrelse",
+      "tag": "Sammenlignende",
+      "description": "Noejagtige planetstoerrelser i forhold til hinanden. Jupiter er virkelig 11x stoerre end Jorden."
+    },
+    "trueScale": {
+      "name": "Sand skala",
+      "tag": "Virkelighed",
+      "description": "Geometrisk perfekt. Baade stoerrelser og afstande bruger den samme skalafaktor."
+    },
+    "truePhysical": {
+      "name": "Sand fysisk skala",
+      "description": "Noejagtige afstande og stoerrelser som de eksisterer i rummet"
+    },
+    "explorer": {
+      "name": "Udforskertilstand",
+      "description": "Forbedret synlighed med komprimerede afstande"
+    },
+    "speedOfLight": "Lysets hastighed",
+    "earthLoopsSec": "Jordkredsloeb/sek",
+    "sunToEarth": "Sol til Jord",
+    "sunToNeptune": "Sol til Neptun",
+    "note": "At vise rummets sande skala er en udfordring - hvis Jorden var en kugle, ville Maanen vaere 9 meter vaek, og Solen ville vaere over 1,5 kilometer vaek!",
+    "controls": {
+      "title": "Styring",
+      "items": [
+        "Klik paa en planet for at fokusere",
+        "Scroll eller knib for at zoome",
+        "Traek for at rotere visningen",
+        "Dobbeltklik for at nulstille"
+      ]
+    },
+    "about": {
+      "title": "Om",
+      "builtWith": "Bygget med worldline-kinematics",
+      "description": "Open source kosmisk visualiseringsframework",
+      "github": "GitHub",
+      "privacy": "Privatliv foerst",
+      "privacyDescription": "Alle beregninger sker lokalt i din browser. Ingen sporing, ingen dataindsamling.",
+      "ephemerides": "Efemerider: Astronomy Engine",
+      "ephemeridesDesc": "VSOP87 planetteori, bueminut-praecision"
+    },
+    "tip": "Klik paa en planet eller etiket for at fokusere. Scroll for at zoome.",
+    "stats": {
+      "ratio": "Forhold"
+    }
+  },
+  "cameraControls": {
+    "zoom": "Zoom",
+    "zoomIn": "Zoom ind",
+    "zoomOut": "Zoom ud",
+    "reset": "Nulstil visning",
+    "tiltUp": "Vip op",
+    "tiltDown": "Vip ned",
+    "rotateLeft": "Roter til venstre",
+    "rotateRight": "Roter til hoejre",
+    "toggleSettings": "Skift indstillinger",
+    "learnAboutModes": "Laer om visuelle tilstande",
+    "showDistancesTitle": "Vis virkelige afstande i AU og lysets rejsetid",
+    "showBeltsTitle": "Vis hovedasteroidebaeltet og Kuiper-baeltet",
+    "showAxisTitle": "Vis rotationsakse paa den valgte planet",
+    "showControlsTitle": "Vis kamerazoom og rotationsstyring",
+    "collapse": "Skjul",
+    "expand": "Udvid"
+  },
+  "sceneOptions": {
+    "visualMode": "Visuel tilstand",
+    "showOrbits": "Vis omloebsbaner",
+    "showDistances": "Vis afstande",
+    "showAxes": "Vis akser",
+    "showBelts": "Vis baelter"
+  },
+  "units": {
+    "au": "AU",
+    "km": "km",
+    "kms": "km/s",
+    "kmh": "km/t",
+    "mph": "mph",
+    "lightMinutes": "lysminutter",
+    "lightSeconds": "lyssekunder"
+  },
+  "journeyDrawer": {
+    "title": "Din kosmiske rejse",
+    "frames": {
+      "spin": {
+        "label": "1. Roteret (Spin)",
+        "description": "Afstand fra Jordens rotation"
+      },
+      "orbit": {
+        "label": "2. Kredsede om Solen",
+        "description": "Jorden racer rundt om Solen"
+      },
+      "galaxy": {
+        "label": "3. Solsystemets rejse",
+        "description": "Solen bevaeger sig rundt om Maelkevejen"
+      },
+      "cmb": {
+        "label": "4. Galaktisk rejse",
+        "description": "Galaksen bevaeger sig i forhold til CMB"
+      }
+    },
+    "journeyNotStarted": "Rejsen er ikke begyndt endnu",
+    "journeyBeginsAtBirth": "Din kosmiske rejse begynder ved foedslen",
+    "totalDistanceTraveled": "Samlet tilbagelagt afstand",
+    "travelingAt": "Rejser med:",
+    "changeBirthDate": "Aendr foedselsdato",
+    "clickToChangeUnits": "Klik for at skifte enheder",
+    "clickToChangeDistanceUnits": "Klik for at skifte afstandsenheder",
+    "clickToChangeSpeedUnits": "Klik for at skifte hastighedsenheder",
+    "viewCalculationDetails": "Se beregningsdetaljer",
+    "northernHemisphere": "Nordlige halvkugle",
+    "southernHemisphere": "Sydlige halvkugle"
+  },
+  "common": {
+    "close": "Luk",
+    "loading": "Indlaeser...",
+    "error": "Fejl",
+    "at": "kl.",
+    "tip": "Tip"
+  },
+  "mobileSettings": {
+    "title": "Indstillinger",
+    "birthDate": "Fodselsdato",
+    "birthTime": "Tidspunkt",
+    "birthLocation": "Sted",
+    "focusOn": "Fokuser pa",
+    "visualMode": "Visuel Tilstand",
+    "display": "Visning",
+    "language": "Sprog",
+    "fullscreen": "Fuld Skaerm",
+    "exitFullscreen": "Forlad Fuld Skaerm",
+    "done": "Faerdig"
+  }
+}

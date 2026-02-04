@@ -1,0 +1,28 @@
+<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!--
+    Simplified monochromatic favicon for Spacetime Journey.
+    Bold concentric orbits with 3D perspective, optimized for small sizes.
+  -->
+
+  <!-- Dark background circle for contrast -->
+  <circle cx="16" cy="16" r="15" fill="#0f172a" />
+
+  <!-- Apply 3D tilt transform (60 degrees = scale Y by 0.5) -->
+  <g transform="translate(16,16)">
+    <g transform="scale(1, 0.5)">
+      <g transform="translate(-16,-16)">
+
+        <!-- Orbit rings - bold, solid -->
+        <circle cx="16" cy="16" r="12" stroke="#60a5fa" stroke-width="1.5" fill="none" />
+        <circle cx="16" cy="16" r="8" stroke="#818cf8" stroke-width="1.5" fill="none" />
+
+        <!-- Single planet dot on outer orbit -->
+        <circle cx="27" cy="13" r="2.5" fill="#60a5fa" />
+
+      </g>
+    </g>
+  </g>
+
+  <!-- Sun at center (bright, not tilted) -->
+  <circle cx="16" cy="16" r="3.5" fill="#fbbf24" />
+</svg>
