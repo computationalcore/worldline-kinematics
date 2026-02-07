@@ -1,0 +1,37 @@
+# Dockerfile for consistent Playwright snapshot generation
+#
+# This ensures snapshots are generated in the same environment as CI,
+# avoiding differences between macOS/Windows development and Linux CI.
+#
+# Usage:
+#   docker build -f Dockerfile.playwright -t worldline-playwright .
+#   docker run --rm -v $(pwd):/app worldline-playwright pnpm test:e2e
+#   docker run --rm -v $(pwd):/app worldline-playwright pnpm test:e2e:update
+
+FROM mcr.microsoft.com/playwright:v1.50.0-jammy
+
+# Set working directory
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm@10
+
+# Copy package files first for better caching
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/
+COPY packages/core/package.json ./packages/core/
+COPY packages/astro/package.json ./packages/astro/
+COPY packages/scene/package.json ./packages/scene/
+COPY packages/ui/package.json ./packages/ui/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy the rest of the source
+COPY . .
+
+# Build packages
+RUN pnpm build
+
+# Default command
+CMD ["pnpm", "--filter", "@worldline-kinematics/web", "test:e2e"]
