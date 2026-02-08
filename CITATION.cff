@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Worldline Kinematics"
+abstract: "TypeScript library for computing frame-relative velocities and path lengths across reference frames (Earth rotation, heliocentric orbit, galactocentric orbit, CMB rest frame)."
+authors:
+  - family-names: "Busquet"
+    given-names: "Vin"
+    email: "computationalcore@gmail.com"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+repository-code: "https://github.com/computationalcore/worldline-kinematics"
+license: MIT
+keywords:
+  - kinematics
+  - reference-frames
+  - astronomy
+  - physics
+  - typescript
