@@ -22,7 +22,11 @@ module.exports = {
       ],
     ],
     'scope-case': [2, 'always', 'kebab-case'],
-    'subject-case': [2, 'never', ['sentence-case', 'start-case', 'pascal-case', 'upper-case']],
+    'subject-case': [
+      2,
+      'never',
+      ['sentence-case', 'start-case', 'pascal-case', 'upper-case'],
+    ],
     'subject-empty': [2, 'never'],
     'subject-full-stop': [2, 'never', '.'],
     'type-case': [2, 'always', 'lower-case'],
