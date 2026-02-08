@@ -151,8 +151,6 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -233,20 +231,17 @@ jobs:
           cd ../scene && pnpm pack && mv *.tgz ../../
           cd ../ui && pnpm pack && mv *.tgz ../../
         working-directory: ${{ github.workspace }}
-      - name: Create test project
+      - name: Extract tarballs and verify imports
         run: |
-          mkdir -p /tmp/pack-test
+          mkdir -p /tmp/pack-test/node_modules/@worldline-kinematics
           cd /tmp/pack-test
-          pnpm init
-          pnpm add \
-            ${{ github.workspace }}/worldline-kinematics-core-*.tgz \
-            ${{ github.workspace }}/worldline-kinematics-astro-*.tgz \
-            ${{ github.workspace }}/worldline-kinematics-scene-*.tgz \
-            ${{ github.workspace }}/worldline-kinematics-ui-*.tgz \
-            react@^19.0.0 react-dom@^19.0.0 three@^0.170.0
-      - name: Verify imports
-        run: |
-          cd /tmp/pack-test
+          for pkg in core astro scene ui; do
+            mkdir -p node_modules/@worldline-kinematics/$pkg
+            tar -xzf ${{ github.workspace }}/worldline-kinematics-$pkg-*.tgz \
+              -C node_modules/@worldline-kinematics/$pkg --strip-components=1
+          done
+          npm init -y
+          npm install react@^19.0.0 react-dom@^19.0.0 three@^0.170.0
           cat > test.mjs << 'EOF'
           import { computeWorldlineState } from '@worldline-kinematics/core';
           import { getSolarSystemRender } from '@worldline-kinematics/astro';
